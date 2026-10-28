@@ -101,7 +101,7 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Inactive 5 days · 75-ball unwon',
-        description: 'App Push first. If it is not opened in 24 hours, follow with email and a last Web Push.',
+        description: 'App Push first. If it is not opened in 24 hours, follow with WhatsApp and a last Web Push.',
         steps: [
           { id: 'rc-trigger', type: 'trigger', label: 'Inactive 5 days', description: 'Trigger: no login for 5 days, 75-ball unwon in 7 days' },
           { id: 'rc-tag', type: 'tag', label: 'Tag comeback seat', description: 'Tag "5-day lapse, 75-ball unwon"' },
@@ -110,7 +110,7 @@
           { id: 'rc-condition', type: 'condition', label: 'Push opened?', description: 'Decision node', conditionLabel: 'Opened?' },
           { id: 'rc-yes', type: 'tag', label: 'Returned', description: 'Player opened the push. Journey stops.', branchType: 'yes' },
           { id: 'rc-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'rc-email', type: 'action', label: 'Comeback email', description: 'Seat and ₱500 are still there', channel: 'email', branchType: 'no', message: { subject: 'Your ₱500 comeback cards expire tonight', title: 'Lucky Express kept your seat', body: 'Maria,\n\nLucky Express kept your seat. ₱500 in comeback cards stays on the account for 24 hours.\n\nJoin the next 75-ball round before they expire.', preview: '₱500 in comeback cards stays on the account for 24 hours.' } },
+          { id: 'rc-email', type: 'action', label: 'Comeback WhatsApp', description: 'Seat and ₱500 are still there', channel: 'whatsapp', branchType: 'no', message: { title: 'Lucky Express kept your seat', body: 'Maria,\n\nLucky Express kept your seat. ₱500 in comeback cards stays on the account for 24 hours.\n\nJoin the next 75-ball round before they expire.' } },
           { id: 'rc-web', type: 'action', label: 'Web Push', description: 'Last reminder before the cards expire', channel: 'web_push', branchType: 'no', message: { title: 'Last chance at Lucky Express', body: 'The ₱500 comeback cards expire in a few hours. Open the hall to use them.' } },
         ],
       },
@@ -131,7 +131,7 @@
           { id: 'jk-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
           { id: 'jk-push', type: 'action', label: 'App Push', description: 'Buy 6 cards, get 2 free', channel: 'app_push', branchType: 'no', message: { title: 'Mega Jackpot', body: 'Buy 6 cards, get 2 free. The draw starts in 15 minutes.' } },
           { id: 'jk-result', type: 'tag', label: 'Round closed', description: '18th of 214. Pattern 3 of 5.', branchType: 'no' },
-          { id: 'jk-email', type: 'action', label: 'Recap email', description: 'Rank, pattern, next pool, early-bird coupon', channel: 'email', branchType: 'no', message: { subject: '18th of 214, next pool is Sunday', title: 'Your Mega Jackpot recap', body: 'You placed 18th of 214.\n\nPattern progress is 3 of 5.\n\nThe next ₱500,000 jackpot opens Sunday. An early-bird coupon is on this seat.', preview: 'Pattern progress is 3 of 5. Next pool opens Sunday.' } },
+          { id: 'jk-email', type: 'action', label: 'Recap WhatsApp', description: 'Rank, pattern, next pool, early-bird coupon', channel: 'whatsapp', branchType: 'no', message: { title: 'Your Mega Jackpot recap', body: 'You placed 18th of 214.\n\nPattern progress is 3 of 5.\n\nThe next ₱500,000 jackpot opens Sunday. An early-bird coupon is on this seat.' } },
         ],
       },
       {
@@ -154,7 +154,7 @@
           { id: 'gc-still', type: 'action', label: 'Still nothing', description: 'Player says the pack is still missing', channel: 'help', branchType: 'no', message: { speaker: 'user', badge: 'Player', title: 'Maria', body: 'Still nothing' } },
           { id: 'gc-handoff', type: 'action', label: 'Transfer to human', description: 'Agent session ends. A person joins.', channel: 'help', branchType: 'no', message: { speaker: 'handoff', badge: 'Handoff', title: 'Transferring to a live agent', body: 'Agent has left this chat. A person is taking over.' } },
           { id: 'gc-agent', type: 'action', label: 'Human credits the pack', description: 'Live person, not the Agent. Releases the pack and a ₱50 voucher.', channel: 'help', branchType: 'no', message: { speaker: 'human', badge: 'Human', title: 'Live agent', body: 'I\'m taking this from here. GCash order GC48291736 for ₱200 is confirmed, and the pack never landed. I have released the card pack to your wallet, plus a ₱50 card voucher for the wait.' } },
-          { id: 'gc-email', type: 'action', label: 'Follow-up email', description: 'Session closed, confirm the pack and voucher', channel: 'email', branchType: 'no', message: { subject: 'Your card pack is in, with a ₱50 voucher', title: 'The pack has been released', body: 'Maria,\n\nThe ₱200 GCash pack is now on the account.\n\nA ₱50 card voucher covers the wait.', preview: 'The pack is on the account, with a ₱50 voucher.' } },
+          { id: 'gc-email', type: 'action', label: 'Follow-up WhatsApp', description: 'Session closed, confirm the pack and voucher', channel: 'whatsapp', branchType: 'no', message: { title: 'The pack has been released', body: 'Maria,\n\nThe ₱200 GCash pack is now on the account.\n\nA ₱50 card voucher covers the wait.' } },
         ],
       },
     ];
@@ -168,7 +168,7 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '5 日未登录 · 75 球未中奖',
-        description: '先发 App Push。24 小时未点击，再发邮件和最后一条 Web Push。',
+        description: '先发 App Push。24 小时未点击，再发 WhatsApp 和最后一条 Web Push。',
         steps: [
           { id: 'rc-trigger', type: 'trigger', label: '5 日未活跃', description: '触发：5 日未登录，近 7 日 75 球未中奖' },
           { id: 'rc-tag', type: 'tag', label: '打上召回标签', description: '标记「5 日流失，75 球未中奖」' },
@@ -177,7 +177,7 @@
           { id: 'rc-condition', type: 'condition', label: '是否点击推送？', description: '决策节点', conditionLabel: '已点击？' },
           { id: 'rc-yes', type: 'tag', label: '已回流', description: '玩家打开了推送，旅程结束。', branchType: 'yes' },
           { id: 'rc-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'rc-email', type: 'action', label: '召回邮件', description: '座位和 ₱500 还在', channel: 'email', branchType: 'no', message: { subject: 'Your ₱500 comeback cards expire tonight', title: 'Lucky Express kept your seat', body: 'Maria,\n\nLucky Express kept your seat. ₱500 in comeback cards stays on the account for 24 hours.\n\nJoin the next 75-ball round before they expire.', preview: '₱500 in comeback cards stays on the account for 24 hours.' } },
+          { id: 'rc-email', type: 'action', label: '召回 WhatsApp', description: '座位和 ₱500 还在', channel: 'whatsapp', branchType: 'no', message: { title: 'Lucky Express kept your seat', body: 'Maria,\n\nLucky Express kept your seat. ₱500 in comeback cards stays on the account for 24 hours.\n\nJoin the next 75-ball round before they expire.' } },
           { id: 'rc-web', type: 'action', label: 'Web Push', description: '回访卡到期前的最后提醒', channel: 'web_push', branchType: 'no', message: { title: 'Last chance at Lucky Express', body: 'The ₱500 comeback cards expire in a few hours. Open the hall to use them.' } },
         ],
       },
@@ -189,7 +189,7 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '在大厅 · Mega Jackpot 进行中',
-        description: '对还没买卡的玩家发提醒，完赛后再发战绩邮件。',
+        description: '对还没买卡的玩家发提醒，完赛后再发 WhatsApp 战绩。',
         steps: [
           { id: 'jk-trigger', type: 'trigger', label: '进入大厅', description: '触发：周末 Mega Jackpot 开放，奖池 ₱500,000' },
           { id: 'jk-delay', type: 'delay', label: '停留 15 分钟', description: '人还在大厅，没有买卡' },
@@ -198,7 +198,7 @@
           { id: 'jk-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
           { id: 'jk-push', type: 'action', label: 'App Push', description: '买 6 张送 2 张', channel: 'app_push', branchType: 'no', message: { title: 'Mega Jackpot', body: 'Buy 6 cards, get 2 free. The draw starts in 15 minutes.' } },
           { id: 'jk-result', type: 'tag', label: '本局结束', description: '214 人中排第 18，图案进度 3/5。', branchType: 'no' },
-          { id: 'jk-email', type: 'action', label: '完赛邮件', description: '名次、图案、下一场、早鸟券', channel: 'email', branchType: 'no', message: { subject: '18th of 214, next pool is Sunday', title: 'Your Mega Jackpot recap', body: 'You placed 18th of 214.\n\nPattern progress is 3 of 5.\n\nThe next ₱500,000 jackpot opens Sunday. An early-bird coupon is on this seat.', preview: 'Pattern progress is 3 of 5. Next pool opens Sunday.' } },
+          { id: 'jk-email', type: 'action', label: 'WhatsApp 战绩', description: '名次、图案、下一场、早鸟券', channel: 'whatsapp', branchType: 'no', message: { title: 'Your Mega Jackpot recap', body: 'You placed 18th of 214.\n\nPattern progress is 3 of 5.\n\nThe next ₱500,000 jackpot opens Sunday. An early-bird coupon is on this seat.' } },
         ],
       },
       {
@@ -221,7 +221,7 @@
           { id: 'gc-still', type: 'action', label: 'Still nothing', description: '玩家回复 Still nothing', channel: 'help', branchType: 'no', message: { speaker: 'user', badge: '用户', title: 'Maria', body: 'Still nothing' } },
           { id: 'gc-handoff', type: 'action', label: '转接人工', description: 'Agent 会话结束，接入人工坐席。', channel: 'help', branchType: 'no', message: { speaker: 'handoff', badge: '转接', title: '正在转接人工', body: 'Agent 已退出。人工坐席正在接入。' } },
           { id: 'gc-agent', type: 'action', label: '人工补发卡包', description: '人工坐席，不是 Agent。补发卡包和 ₱50 券。', channel: 'help', branchType: 'no', message: { speaker: 'human', badge: '人工', title: '人工坐席', body: 'I\'m taking this from here. GCash order GC48291736 for ₱200 is confirmed, and the pack never landed. I have released the card pack to your wallet, plus a ₱50 card voucher for the wait.' } },
-          { id: 'gc-email', type: 'action', label: '回访邮件', description: '会话结束，确认卡包和券', channel: 'email', branchType: 'no', message: { subject: 'Your card pack is in, with a ₱50 voucher', title: 'The pack has been released', body: 'Maria,\n\nThe ₱200 GCash pack is now on the account.\n\nA ₱50 card voucher covers the wait.', preview: 'The pack is on the account, with a ₱50 voucher.' } },
+          { id: 'gc-email', type: 'action', label: '回访 WhatsApp', description: '会话结束，确认卡包和券', channel: 'whatsapp', branchType: 'no', message: { title: 'The pack has been released', body: 'Maria,\n\nThe ₱200 GCash pack is now on the account.\n\nA ₱50 card voucher covers the wait.' } },
         ],
       },
     ];
@@ -638,7 +638,7 @@
 
     const LiveDeskDesk = ({ messages, isCn }) => {
       const scroller = useRef(null);
-      const chat = messages.filter(message => message.channel === 'help' || message.channel === 'email');
+      const chat = messages.filter(message => message.channel === 'help' || message.channel === 'whatsapp');
       const handed = chat.some(message => message.channel === 'help' && (message.content.speaker === 'handoff' || message.content.speaker === 'human'));
       const last = [...chat].reverse().find(message => message.channel === 'help' && message.content.speaker !== 'handoff');
       const preview = last ? last.content.body : (isCn ? '等待玩家从右侧发起' : 'Waiting for the player');
@@ -701,8 +701,8 @@
                 <p className="text-center text-[11px] text-gray-400">{isCn ? '由自动化分配给 Agent' : 'Assigned to Agent by automation'}</p>
               )}
               {chat.map(message => {
-                if (message.channel === 'email') {
-                  return <p key={message.id} className="text-center text-[11px] text-gray-400">{isCn ? '会话结束，回访邮件已发送' : 'Session closed. Follow-up email sent.'}</p>;
+                if (message.channel === 'whatsapp') {
+                  return <p key={message.id} className="text-center text-[11px] text-gray-400">{isCn ? '会话结束，WhatsApp 已发送' : 'Session closed. WhatsApp sent.'}</p>;
                 }
                 const speaker = message.content.speaker || 'agent';
                 if (speaker === 'handoff') {
@@ -742,7 +742,7 @@
 
     const PlayerEntryChat = ({ messages, isCn }) => {
       const scroller = useRef(null);
-      const chat = messages.filter(message => message.channel === 'help' || message.channel === 'email');
+      const chat = messages.filter(message => message.channel === 'help' || message.channel === 'whatsapp');
       useEffect(() => {
         if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
       }, [messages]);
@@ -761,7 +761,7 @@
               <p className="text-center text-xs text-gray-400 pt-10">{isCn ? '玩家在这里发起对话' : 'The player starts the chat here'}</p>
             ) : null}
             {chat.map((message, index) => {
-              if (message.channel === 'email') {
+              if (message.channel === 'whatsapp') {
                 return <MessageCard key={message.id} message={message} index={index} lang={isCn ? 'cn' : 'en'} ui={UIS[isCn ? 'cn' : 'en']} />;
               }
               const speaker = message.content.speaker || 'agent';
@@ -1098,17 +1098,13 @@
                   {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center py-12">
                       <div className="w-16 h-16 rounded-2xl bg-[#5A69E0]/5 flex items-center justify-center mb-4">
-                        <span className="text-gray-400"><Icons.Mail /></span>
+                        <span className="text-gray-400"><Icons.MessageCircle /></span>
                       </div>
                       <h3 className="text-[#394551] font-medium mb-2">{UI.noMsgTitle}</h3>
                       <p className="text-gray-500 text-sm">
                         {UI.noMsgBody}
                       </p>
                       <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Icons.Mail />
-                          <span className="text-xs">{UI.legendEmail}</span>
-                        </div>
                         <div className="flex items-center gap-2 text-gray-500">
                           <Icons.MessageCircle />
                           <span className="text-xs">WhatsApp</span>
@@ -1143,8 +1139,6 @@
                   <span className="text-gray-500 text-xs">{UI.engineRunning}</span>
                 </div>
                 <div className="hidden md:flex items-center gap-4 text-xs text-gray-500">
-                  <span>{UI.legendEmail}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-400" />
                   <span>WhatsApp</span>
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
                   <span>SMS</span>
