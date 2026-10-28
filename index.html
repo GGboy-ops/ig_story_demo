@@ -166,17 +166,22 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Just registered · verification open',
-        description: 'Welcome at once. Still unverified after 10 minutes gets another push, then WhatsApp at 12 hours.',
+        description: 'Welcome push, then a reminder if verification is still open at 10 minutes. At 12 hours, WhatsApp, then SMS.',
         steps: [
-          { id: 'gw-trigger', type: 'trigger', label: 'User registered', description: 'Trigger: signup completed' },
-          { id: 'gw-push', type: 'action', label: 'Welcome Push', description: 'Welcome plus a prompt to verify', channel: 'app_push', message: { title: 'Welcome in', body: 'Your account is open. Verify your identity to unlock deposit and withdrawal.' } },
-          { id: 'gw-delay', type: 'delay', label: 'Wait 10 minutes', description: 'Watch for verification' },
-          { id: 'gw-condition', type: 'condition', label: 'Verified?', description: 'Decision node', conditionLabel: 'Verified?' },
-          { id: 'gw-yes', type: 'tag', label: 'Verified', description: 'Identity check is done. Journey stops.', branchType: 'yes' },
-          { id: 'gw-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gw-push2', type: 'action', label: 'App Push', description: 'Still unverified after 10 minutes', channel: 'app_push', branchType: 'no', message: { title: 'Verification still open', body: 'Deposit and withdrawal stay locked until identity verification is finished.' } },
-          { id: 'gw-delay2', type: 'delay', label: 'Wait 12 hours', description: 'Second round, inside sending hours', branchType: 'no' },
-          { id: 'gw-wa', type: 'action', label: 'WhatsApp', description: '12 hours, still unverified', channel: 'whatsapp', branchType: 'no', message: { title: 'Verify to play with real balance', body: 'Your signup is still waiting on identity verification.\n\nFinish it to unlock deposit and withdrawal.' } },
+          { id: 'gw-start', type: 'trigger', label: 'Start', description: 'Event: user registered' },
+          { id: 'gw-push0', type: 'action', label: 'App Push', description: 'Welcome the new user and ask them to verify', channel: 'app_push', message: { title: 'Welcome', body: 'Your account is open. Verify your identity to unlock deposit and withdrawal.' } },
+          { id: 'gw-w0', type: 'waitEvent', label: 'Wait for event', description: '10 min for identity verification', yesLabel: 'Done', noLabel: 'Timed out',
+            yes: [ { id: 'gw-ok0', type: 'end', label: 'End · Verified', description: 'Hand off to first deposit' } ],
+            no: [ { id: 'gw-push1', type: 'action', label: 'App Push', description: 'Verification reminder, with a first-deposit preview', channel: 'app_push', message: { title: 'Verification still open', body: 'Identity verification is still open. Finish it to unlock deposit, and preview the first-deposit pack.' } } ] },
+          { id: 'gw-w1', type: 'waitEvent', label: 'Wait for event', description: '12 hours for identity verification', yesLabel: 'Done', noLabel: 'Timed out',
+            yes: [ { id: 'gw-ok1', type: 'end', label: 'End · Verified', description: 'Hand off to first deposit' } ],
+            no: [ { id: 'gw-st1', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gw-wa', type: 'action', label: 'WhatsApp', description: 'Template · how to verify', channel: 'whatsapp', message: { title: 'How to verify', body: 'Identity verification is still open.\n\nFinish it to unlock deposit and withdrawal.' } },
+          { id: 'gw-w2', type: 'waitEvent', label: 'Wait for event', description: '11 hours for identity verification', yesLabel: 'Done', noLabel: 'Timed out',
+            yes: [ { id: 'gw-ok2', type: 'end', label: 'End · Verified', description: '' } ],
+            no: [ { id: 'gw-st2', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gw-sms', type: 'action', label: 'SMS', description: 'Last reminder · verification deadline', channel: 'sms', message: { title: 'Verification deadline', body: 'Last reminder: identity verification is still open. Deposit stays locked until it is done.' } },
+          { id: 'gw-end', type: 'end', label: 'End', description: 'Cannot enter again' },
         ],
       },
       {
@@ -188,17 +193,20 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Verified · never deposited',
-        description: 'First-deposit pack at once. Push again at 10 minutes, WhatsApp at 24 hours if the balance is still zero.',
+        description: 'First-deposit push at once. After 10 minutes, split by play count, then SMS if still unpaid at 24 hours.',
         steps: [
-          { id: 'gf-trigger', type: 'trigger', label: 'Identity verified', description: 'Trigger: verification done, lifetime deposit is 0' },
-          { id: 'gf-push', type: 'action', label: 'First-deposit Push', description: 'Pack is live for the 3-day window', channel: 'app_push', message: { title: 'First-deposit pack', body: 'Verification is done. The first-deposit pack is open for 3 days.' } },
-          { id: 'gf-delay', type: 'delay', label: 'Wait 10 minutes', description: 'Watch for a deposit' },
-          { id: 'gf-condition', type: 'condition', label: 'Deposited?', description: 'Decision node', conditionLabel: 'Deposited?' },
-          { id: 'gf-yes', type: 'tag', label: 'Deposited', description: 'First deposit landed. Journey stops.', branchType: 'yes' },
-          { id: 'gf-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gf-push2', type: 'action', label: 'App Push', description: '10 minutes, still zero', channel: 'app_push', branchType: 'no', message: { title: 'Pack still open', body: 'The first-deposit pack is still on this account. It closes after the 3-day window.' } },
-          { id: 'gf-delay2', type: 'delay', label: 'Wait 24 hours', description: 'Last touch of the golden window', branchType: 'no' },
-          { id: 'gf-wa', type: 'action', label: 'WhatsApp', description: '24 hours, still no deposit', channel: 'whatsapp', branchType: 'no', message: { title: 'First-deposit pack closes soon', body: 'Verification is done and the balance is still zero.\n\nThe first-deposit pack is still open today.' } },
+          { id: 'gf-start', type: 'trigger', label: 'Start', description: 'Event: identity verified · deposit amount = 0' },
+          { id: 'gf-push0', type: 'action', label: 'App Push', description: 'First-deposit pack is live', channel: 'app_push', message: { title: 'First-deposit pack', body: 'Verification is done. The first-deposit pack is open.' } },
+          { id: 'gf-w0', type: 'waitEvent', label: 'Wait for event', description: '10 min for a successful deposit', yesLabel: 'Deposited', noLabel: 'Timed out',
+            yes: [ { id: 'gf-ok0', type: 'end', label: 'End · First deposit', description: 'Hand off to retention' } ],
+            no: [ { id: 'gf-cond', type: 'condition', label: 'Condition', description: 'Attribute: games played', yesLabel: '≥3', noLabel: '<3',
+              yes: [ { id: 'gf-wa', type: 'action', label: 'WhatsApp', description: 'Active player: limited double first deposit', channel: 'whatsapp', keep: true, message: { title: 'Double first deposit', body: 'You have been active. A limited double reward is on the first deposit.' } } ],
+              no: [ { id: 'gf-pushlo', type: 'action', label: 'App Push', description: 'New player first-deposit guide', channel: 'app_push', keep: true, message: { title: 'First-deposit guide', body: 'A starter first-deposit pack is ready on this new account.' } } ] } ] },
+          { id: 'gf-w1', type: 'waitEvent', label: 'Wait for event', description: '24 hours for a successful deposit', yesLabel: 'Deposited', noLabel: 'Timed out',
+            yes: [ { id: 'gf-ok1', type: 'end', label: 'End · First deposit', description: '' } ],
+            no: [ { id: 'gf-st', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gf-sms', type: 'action', label: 'SMS', description: 'First-deposit offer is about to expire', channel: 'sms', message: { title: 'Offer expiring', body: 'The first-deposit offer is about to expire. The balance is still zero.' } },
+          { id: 'gf-end', type: 'end', label: 'End', description: 'Cannot enter again' },
         ],
       },
       {
@@ -210,16 +218,16 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Opened the cashier · not paid',
-        description: 'Wait 5 minutes. Then App Push back to the cashier, and WhatsApp an hour later.',
+        description: 'Wait 5 minutes. Then App Push. If still unpaid after 1 hour, WhatsApp.',
         steps: [
-          { id: 'gcashier-trigger', type: 'trigger', label: 'Opened the cashier', description: 'Trigger: deposit tap or cashier visit, already verified' },
-          { id: 'gcashier-delay', type: 'delay', label: 'Wait 5 minutes', description: 'See if payment finishes on its own' },
-          { id: 'gcashier-condition', type: 'condition', label: 'Paid?', description: 'Decision node', conditionLabel: 'Paid?' },
-          { id: 'gcashier-yes', type: 'tag', label: 'Paid', description: 'Deposit completed. Journey stops.', branchType: 'yes' },
-          { id: 'gcashier-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gcashier-push', type: 'action', label: 'App Push', description: 'Deep link back to the cashier', channel: 'app_push', branchType: 'no', message: { title: 'Deposit not finished', body: 'The cashier is still open. Tap to return and complete the deposit.' } },
-          { id: 'gcashier-delay2', type: 'delay', label: 'Wait 1 hour', description: 'Watch for payment', branchType: 'no' },
-          { id: 'gcashier-wa', type: 'action', label: 'WhatsApp', description: 'Limited-time deposit pack', channel: 'whatsapp', branchType: 'no', message: { title: 'Deposit pack is timed', body: 'The cashier visit did not finish.\n\nA limited deposit pack is on this account for a short window.' } },
+          { id: 'gca-start', type: 'trigger', label: 'Start', description: 'Event: opened the cashier or tapped deposit' },
+          { id: 'gca-w0', type: 'waitEvent', label: 'Wait for event', description: '5 min for a successful deposit', yesLabel: 'Done', noLabel: 'Timed out',
+            yes: [ { id: 'gca-ok0', type: 'end', label: 'End · Deposit done', description: '' } ],
+            no: [ { id: 'gca-push', type: 'action', label: 'App Push', description: 'Deposit reminder with an offer deep link', channel: 'app_push', message: { title: 'Deposit not finished', body: 'The cashier is still open. Tap to return and finish the deposit.' } } ] },
+          { id: 'gca-w1', type: 'waitEvent', label: 'Wait for event', description: '1 hour for a successful deposit', yesLabel: 'Done', noLabel: 'Timed out',
+            yes: [ { id: 'gca-ok1', type: 'end', label: 'End · Deposit done', description: '' } ],
+            no: [ { id: 'gca-wa', type: 'action', label: 'WhatsApp', description: 'Limited-time deposit pack', channel: 'whatsapp', message: { title: 'Deposit pack is timed', body: 'The cashier visit did not finish.\n\nA limited deposit pack is on this account.' } } ] },
+          { id: 'gca-end', type: 'end', label: 'End', description: 'Can enter again after 1 hour' },
         ],
       },
       {
@@ -230,20 +238,25 @@
         color: 'purple',
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
-        userSegment: 'No login for 3 days',
-        description: 'Day-3 comeback pack. If they stay out, day 4, 5, and 6 each raise the offer.',
+        userSegment: 'Last login more than 72 hours ago',
+        description: 'Day-3 return pack. Each following day, login ends the journey; otherwise the next push waits for the sending window, through day 6.',
         steps: [
-          { id: 'gs-trigger', type: 'trigger', label: 'Inactive 3 days', description: 'Trigger: last login is past 3 days' },
-          { id: 'gs-push', type: 'action', label: 'Day 3 Push', description: 'Comeback line plus a return pack', channel: 'app_push', message: { title: 'We kept your seat', body: 'It has been 3 days. A return pack is on the account.' } },
-          { id: 'gs-delay', type: 'delay', label: 'Wait 1 day', description: 'Watch for a login' },
-          { id: 'gs-condition', type: 'condition', label: 'Logged in?', description: 'Decision node', conditionLabel: 'Back?' },
-          { id: 'gs-yes', type: 'tag', label: 'Returned', description: 'Login landed. Journey stops.', branchType: 'yes' },
-          { id: 'gs-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gs-d4', type: 'action', label: 'Day 4 Push', description: 'New event', channel: 'app_push', branchType: 'no', message: { title: 'A new table is open', body: 'Day 4. A new event is live, and the return pack is still there.' } },
-          { id: 'gs-wait4', type: 'delay', label: 'Wait 1 day', description: 'Still no login', branchType: 'no' },
-          { id: 'gs-d5', type: 'action', label: 'Day 5 Push', description: 'Exclusive reward', channel: 'app_push', branchType: 'no', message: { title: 'Exclusive return reward', body: 'Day 5. An exclusive reward is reserved on this seat.' } },
-          { id: 'gs-wait5', type: 'delay', label: 'Wait 1 day', description: 'Last chance next', branchType: 'no' },
-          { id: 'gs-d6', type: 'action', label: 'Day 6 Push', description: 'Last chance', channel: 'app_push', branchType: 'no', message: { title: 'Last day of the return pack', body: 'Day 6. This is the last push before the return pack closes.' } },
+          { id: 'gs-start', type: 'trigger', label: 'Start', description: 'Attribute: last login more than 72 hours ago' },
+          { id: 'gs-st0', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' },
+          { id: 'gs-d3', type: 'action', label: 'App Push', description: 'Day 3: return pack is waiting', channel: 'app_push', message: { title: 'Return pack', body: 'It has been 3 days. A return pack is on the account.' } },
+          { id: 'gs-w1', type: 'waitEvent', label: 'Wait for event', description: '1 day for a login', yesLabel: 'Logged in', noLabel: 'Timed out',
+            yes: [ { id: 'gs-ok1', type: 'end', label: 'End · Logged in', description: 'Back in the active pool' } ],
+            no: [ { id: 'gs-st1', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gs-d4', type: 'action', label: 'App Push', description: 'Day 4: a new event is live', channel: 'app_push', message: { title: 'New event', body: 'Day 4. A new event is live, and the return pack is still there.' } },
+          { id: 'gs-w2', type: 'waitEvent', label: 'Wait for event', description: '1 day for a login', yesLabel: 'Logged in', noLabel: 'Timed out',
+            yes: [ { id: 'gs-ok2', type: 'end', label: 'End · Logged in', description: '' } ],
+            no: [ { id: 'gs-st2', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gs-d5', type: 'action', label: 'App Push', description: 'Day 5: exclusive reward', channel: 'app_push', message: { title: 'Exclusive reward', body: 'Day 5. An exclusive reward is reserved on this seat.' } },
+          { id: 'gs-w3', type: 'waitEvent', label: 'Wait for event', description: '1 day for a login', yesLabel: 'Logged in', noLabel: 'Timed out',
+            yes: [ { id: 'gs-ok3', type: 'end', label: 'End · Logged in', description: '' } ],
+            no: [ { id: 'gs-st3', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gs-d6', type: 'action', label: 'App Push', description: 'Day 6: last chance', channel: 'app_push', message: { title: 'Last chance', body: 'Day 6. This is the last note before the return pack closes.' } },
+          { id: 'gs-end', type: 'end', label: 'End', description: 'Can enter again after 30 minutes' },
         ],
       },
       {
@@ -255,14 +268,18 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Gold VIP · levels 11–16',
-        description: 'Level 12 gets the one-step platinum push. Levels 13–16 get the regular upgrade note.',
+        description: 'On a level-up, level 12 gets the one-step platinum note. Levels 13–16 get the regular reward note.',
         steps: [
-          { id: 'gv-trigger', type: 'trigger', label: 'Gold VIP band', description: 'Trigger: VIP level is 11 to 16' },
-          { id: 'gv-listen', type: 'tag', label: 'Watch level-up', description: 'Wait for a VIP level change' },
-          { id: 'gv-condition', type: 'condition', label: 'Reached level 12?', description: 'One step from platinum', conditionLabel: 'Level 12?' },
-          { id: 'gv-yes', type: 'action', label: 'Platinum sprint', description: 'Level 12, one step from platinum', channel: 'app_push', branchType: 'yes', message: { title: 'One level from platinum', body: 'You just reached level 12. One more level promotes this account to platinum VIP.' } },
-          { id: 'gv-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gv-plat', type: 'action', label: 'Regular note', description: 'Levels 13–16, standard upgrade benefits', channel: 'app_push', branchType: 'no', message: { title: 'Level up', body: 'You reached the next VIP level. Upgrade benefits are ready to claim.' } },
+          { id: 'gv-start', type: 'trigger', label: 'Start', description: 'Attribute: VIP level from 11 to 16' },
+          { id: 'gv-listen', type: 'listen', label: 'Listen for event', description: 'Event: VIP level up', yesLabel: 'Level = 12', noLabel: 'Level 13–16',
+            yes: [
+              { id: 'gv-near', type: 'action', label: 'App Push', description: 'Level 12: one level from platinum VIP', channel: 'app_push', keep: true, message: { title: 'One level from platinum', body: 'You just reached level 12. One more level promotes this account to platinum VIP.' } },
+              { id: 'gv-end-near', type: 'end', label: 'End', description: 'Can enter again after 5 minutes' },
+            ],
+            no: [
+              { id: 'gv-reg', type: 'action', label: 'App Push', description: 'Congrats on level N, claim the upgrade benefit', channel: 'app_push', keep: true, message: { title: 'Level up', body: 'You reached the next VIP level. Upgrade benefits are ready to claim.' } },
+              { id: 'gv-end-reg', type: 'end', label: 'End', description: 'Can enter again after 5 minutes' },
+            ] },
         ],
       },
       {
@@ -274,17 +291,19 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Last week rebate ≥ 10',
-        description: 'Monday claim notice. Unclaimed after a day gets a push, then an SMS before it expires. Claimed players get a Saturday preview.',
+        description: 'Monday claim notice. Unclaimed after a day gets another push, then an SMS before it expires.',
         steps: [
-          { id: 'gr-trigger', type: 'trigger', label: 'Monday 9:00', description: 'Trigger: last week rebate is at least 10' },
-          { id: 'gr-push', type: 'action', label: 'Claim Push', description: 'Monday notice to collect the rebate', channel: 'app_push', message: { title: 'Weekly rebate is ready', body: 'Last week rebate is ready. Claim it from the rewards page.' } },
-          { id: 'gr-delay', type: 'delay', label: 'Wait 1 day', description: 'Watch for a claim' },
-          { id: 'gr-condition', type: 'condition', label: 'Claimed?', description: 'Decision node', conditionLabel: 'Claimed?' },
-          { id: 'gr-yes', type: 'action', label: 'Saturday preview', description: 'Already claimed. Preview next week on Saturday', channel: 'app_push', branchType: 'yes', message: { title: 'Next week rebate', body: 'This week is claimed. Saturday is the reminder for next week rebate.' } },
-          { id: 'gr-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gr-push2', type: 'action', label: 'App Push', description: 'One day, still unclaimed', channel: 'app_push', branchType: 'no', message: { title: 'Rebate still unclaimed', body: 'Yesterday notice is still open. The weekly rebate has not been claimed.' } },
-          { id: 'gr-delay2', type: 'delay', label: 'Wait 4 days', description: 'Expiry window', branchType: 'no' },
-          { id: 'gr-sms', type: 'action', label: 'SMS', description: 'Rebate is about to expire', channel: 'sms', branchType: 'no', message: { title: 'Rebate expires soon', body: 'Weekly rebate expires soon. Open the app and claim it before the window closes.' } },
+          { id: 'gr-start', type: 'trigger', label: 'Start', description: 'Attribute: last week rebate ≥ 10' },
+          { id: 'gr-mon', type: 'sendtime', label: 'Sending window', description: 'Publish Monday at 9:00' },
+          { id: 'gr-claim', type: 'action', label: 'App Push', description: 'This week rebate is ready to claim', channel: 'app_push', message: { title: 'Weekly rebate is ready', body: 'Last week rebate is ready. Claim it from the rewards page.' } },
+          { id: 'gr-w1', type: 'waitEvent', label: 'Wait for event', description: '1 day for the rebate claim', yesLabel: 'Claimed', noLabel: 'Timed out',
+            yes: [ { id: 'gr-ok1', type: 'end', label: 'Claimed → branch 2', description: 'Enter the preview flow' } ],
+            no: [ { id: 'gr-remind', type: 'action', label: 'App Push', description: 'Rebate still unclaimed', channel: 'app_push', message: { title: 'Rebate still unclaimed', body: 'The Monday notice is still open. This week rebate has not been claimed.' } } ] },
+          { id: 'gr-w2', type: 'waitEvent', label: 'Wait for event', description: '4 days for the rebate claim', yesLabel: 'Claimed', noLabel: 'Timed out',
+            yes: [ { id: 'gr-ok2', type: 'end', label: 'Claimed', description: '' } ],
+            no: [ { id: 'gr-st', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' } ] },
+          { id: 'gr-sms', type: 'action', label: 'SMS', description: 'Rebate is about to expire', channel: 'sms', message: { title: 'Rebate expires soon', body: 'Weekly rebate expires soon. Open the app and claim it before the window closes.' } },
+          { id: 'gr-end', type: 'end', label: 'End', description: 'Can enter again after 18 hours' },
         ],
       },
       {
@@ -296,15 +315,13 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Logged in · next-day window',
-        description: '23 hours after each login, App Push previews the check-in reward. A 7-day streak unlocks double.',
+        description: '23 hours after login, send the check-in push inside the sending window.',
         steps: [
-          { id: 'gk-trigger', type: 'trigger', label: 'User logged in', description: 'Trigger: each login can enter again' },
-          { id: 'gk-delay', type: 'delay', label: 'Wait 23 hours', description: 'Just before the next-day visit window' },
-          { id: 'gk-push', type: 'action', label: 'Check-in Push', description: 'Reward preview, 7-day streak doubles', channel: 'app_push', message: { title: 'Check in today', body: 'Check in for 50 coins. A 7-day streak unlocks double.' } },
-          { id: 'gk-condition', type: 'condition', label: 'Checked in?', description: 'Decision node', conditionLabel: 'Checked in?' },
-          { id: 'gk-yes', type: 'tag', label: 'Checked in', description: 'Today check-in is done.', branchType: 'yes' },
-          { id: 'gk-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gk-no', type: 'end', label: 'End', description: 'No second message. This login cycle stops.', branchType: 'no' },
+          { id: 'gk-start', type: 'trigger', label: 'Start', description: 'Event: user logged in' },
+          { id: 'gk-wait', type: 'delay', label: 'Wait', description: '23 hours' },
+          { id: 'gk-st', type: 'sendtime', label: 'Sending window', description: 'Device timezone 9:00–21:00' },
+          { id: 'gk-push', type: 'action', label: 'App Push', description: 'Check-in reminder and today reward preview', channel: 'app_push', message: { title: 'Check in today', body: 'Check in for 50 coins. A 7-day streak unlocks double.' } },
+          { id: 'gk-end', type: 'end', label: 'End', description: 'Can enter again after 2 minutes' },
         ],
       },
       {
@@ -316,15 +333,21 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: 'Verified · at least 1 invite',
-        description: 'On a friend signup, a hit on 5, 20, 100 and the later tiers sends the claim notice. Two short of a tier sends the sprint.',
+        description: 'On a friend signup, a hit on 5, 20, 100 and the later tiers sends the claim. Two short of a tier sends the sprint.',
         steps: [
-          { id: 'gi-trigger', type: 'trigger', label: 'Friend signed up', description: 'Trigger: verified, invites at least 1, a friend just registered' },
-          { id: 'gi-condition', type: 'condition', label: 'Hit a reward tier?', description: '5, 20, 100, 200, 500, or 1000', conditionLabel: 'Tier hit?' },
-          { id: 'gi-yes', type: 'action', label: 'Claim notice', description: 'Count is exactly on a reward tier', channel: 'app_push', branchType: 'yes', message: { title: 'Invite reward is ready', body: 'A friend just signed up and the invite count hit a reward tier. Claim it now.' } },
-          { id: 'gi-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
-          { id: 'gi-sprint', type: 'action', label: 'Two short', description: 'Count is 3, 18, 98, 198, 498, or 998', channel: 'app_push', branchType: 'no', message: { title: 'Two invites to the next reward', body: 'A friend just signed up. Two more invites reach the next reward.' } },
+          { id: 'gi-start', type: 'trigger', label: 'Start', description: 'Attribute: verified · invites ≥ 1' },
+          { id: 'gi-listen', type: 'listen', label: 'Listen for event', description: 'Event: friend signed up', yesLabel: 'Invites 5/20/100…', noLabel: 'Invites 3/18/98…',
+            yes: [
+              { id: 'gi-reward', type: 'action', label: 'App Push', description: 'Tier reached. Claim the reward now', channel: 'app_push', keep: true, message: { title: 'Invite reward is ready', body: 'A friend just signed up and the invite count hit a reward tier. Claim it now.' } },
+              { id: 'gi-end-reward', type: 'end', label: 'End', description: 'Can enter again after 2 minutes' },
+            ],
+            no: [
+              { id: 'gi-near', type: 'action', label: 'App Push', description: 'Two more invites to the next reward', channel: 'app_push', keep: true, message: { title: 'Two invites to go', body: 'A friend just signed up. Two more invites reach the next reward.' } },
+              { id: 'gi-end-near', type: 'end', label: 'End', description: 'Can enter again after 2 minutes' },
+            ] },
         ],
       },
+
     ];
 
     const scenariosZh = [
@@ -401,17 +424,22 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '刚注册 · 认证未完成',
-        description: '注册当时发欢迎。10 分钟仍未认证再 Push，12 小时仍未完成发 WhatsApp。',
+        description: '先发欢迎。10 分钟未认证再提醒。12 小时后发 WhatsApp，仍未完成则 SMS。',
         steps: [
-          { id: 'gw-trigger', type: 'trigger', label: '用户注册', description: '触发：注册完成' },
-          { id: 'gw-push', type: 'action', label: '欢迎 Push', description: '欢迎，并引导完成认证', channel: 'app_push', message: { title: '欢迎加入', body: '账号已经开通。完成身份认证后才能充值和提现。' } },
-          { id: 'gw-delay', type: 'delay', label: '等待 10 分钟', description: '看认证有没有完成' },
-          { id: 'gw-condition', type: 'condition', label: '认证完成了吗？', description: '决策节点', conditionLabel: '已认证？' },
-          { id: 'gw-yes', type: 'tag', label: '已认证', description: '身份认证完成，旅程结束。', branchType: 'yes' },
-          { id: 'gw-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gw-push2', type: 'action', label: 'App Push', description: '10 分钟仍未认证', channel: 'app_push', branchType: 'no', message: { title: '认证还没完成', body: '充值和提现仍未解锁。先把身份认证做完。' } },
-          { id: 'gw-delay2', type: 'delay', label: '等待 12 小时', description: '第二轮，落在可发送时间内', branchType: 'no' },
-          { id: 'gw-wa', type: 'action', label: 'WhatsApp', description: '12 小时仍未认证', channel: 'whatsapp', branchType: 'no', message: { title: '完成认证才能充值', body: '注册还停在身份认证。\n\n完成后才能充值和提现。' } },
+          { id: 'gw-start', type: 'trigger', label: '开始', description: '事件: 用户注册' },
+          { id: 'gw-push0', type: 'action', label: 'App Push', description: 'AI Write · 欢迎新用户 + 认证引导', channel: 'app_push', message: { title: '欢迎新用户', body: '账号已经开通。完成身份认证后才能充值和提现。' } },
+          { id: 'gw-w0', type: 'waitEvent', label: '等待事件', description: '10min 内等待 身份认证完成', yesLabel: '已完成', noLabel: '超时未完成',
+            yes: [ { id: 'gw-ok0', type: 'end', label: '结束 · 认证完成', description: '进入首充激活旅程' } ],
+            no: [ { id: 'gw-push1', type: 'action', label: 'App Push', description: 'AI Write · 认证提醒 + 首充礼包预告', channel: 'app_push', message: { title: '认证提醒', body: '身份认证还没完成。完成后即可充值，并可以预览首充礼包。' } } ] },
+          { id: 'gw-w1', type: 'waitEvent', label: '等待事件', description: '12h 内等待 身份认证完成', yesLabel: '已完成', noLabel: '超时未完成',
+            yes: [ { id: 'gw-ok1', type: 'end', label: '结束 · 认证完成', description: '进入首充激活旅程' } ],
+            no: [ { id: 'gw-st1', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gw-wa', type: 'action', label: 'WhatsApp', description: '模板消息 · 认证步骤说明', channel: 'whatsapp', message: { title: '认证步骤说明', body: '身份认证还没完成。\n\n按步骤做完，才能充值和提现。' } },
+          { id: 'gw-w2', type: 'waitEvent', label: '等待事件', description: '11h 内等待 身份认证完成', yesLabel: '已完成', noLabel: '超时未完成',
+            yes: [ { id: 'gw-ok2', type: 'end', label: '结束 · 认证完成', description: '' } ],
+            no: [ { id: 'gw-st2', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gw-sms', type: 'action', label: 'SMS', description: '最后提醒 · 认证截止通知', channel: 'sms', message: { title: '认证截止通知', body: '最后提醒：身份认证仍未完成。完成前不能充值。' } },
+          { id: 'gw-end', type: 'end', label: '结束', description: '不可再次进入' },
         ],
       },
       {
@@ -423,17 +451,20 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '已认证 · 从未充值',
-        description: '认证当时推首充礼包。10 分钟未充值再 Push，24 小时仍是 0 再发 WhatsApp。',
+        description: '认证后立即发首充通知。10 分钟未充值按游戏次数分流，24 小时仍未充值发 SMS。',
         steps: [
-          { id: 'gf-trigger', type: 'trigger', label: '身份认证完成', description: '触发：认证完成，累计充值为 0' },
-          { id: 'gf-push', type: 'action', label: '首充 Push', description: '3 日窗口内的首充礼包', channel: 'app_push', message: { title: '首充礼包已开放', body: '认证已完成。首充礼包开放 3 天。' } },
-          { id: 'gf-delay', type: 'delay', label: '等待 10 分钟', description: '看有没有充值' },
-          { id: 'gf-condition', type: 'condition', label: '充值了吗？', description: '决策节点', conditionLabel: '已充值？' },
-          { id: 'gf-yes', type: 'tag', label: '已充值', description: '首充到账，旅程结束。', branchType: 'yes' },
-          { id: 'gf-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gf-push2', type: 'action', label: 'App Push', description: '10 分钟仍未充值', channel: 'app_push', branchType: 'no', message: { title: '首充礼包还在', body: '账户仍是 0。首充礼包还在 3 日窗口内。' } },
-          { id: 'gf-delay2', type: 'delay', label: '等待 24 小时', description: '黄金期里的最后一轮', branchType: 'no' },
-          { id: 'gf-wa', type: 'action', label: 'WhatsApp', description: '24 小时仍未充值', channel: 'whatsapp', branchType: 'no', message: { title: '首充礼包即将结束', body: '认证已完成，余额仍是 0。\n\n首充礼包今天还开着。' } },
+          { id: 'gf-start', type: 'trigger', label: '开始', description: '事件: 身份认证完成 · 属性: 充值金额=0' },
+          { id: 'gf-push0', type: 'action', label: 'App Push', description: 'AI Write · 首充礼包激活通知', channel: 'app_push', message: { title: '首充礼包激活', body: '认证已完成。首充礼包已开放。' } },
+          { id: 'gf-w0', type: 'waitEvent', label: '等待事件', description: '10min 内等待 充值成功', yesLabel: '已充值', noLabel: '超时未充值',
+            yes: [ { id: 'gf-ok0', type: 'end', label: '结束 · 首充完成', description: '进入留存运营旅程' } ],
+            no: [ { id: 'gf-cond', type: 'condition', label: '条件分支', description: '属性: 历史游戏次数', yesLabel: '≥3次', noLabel: '<3次',
+              yes: [ { id: 'gf-wa', type: 'action', label: 'WhatsApp', description: '活跃玩家: 限时首充双倍奖励', channel: 'whatsapp', keep: true, message: { title: '限时首充双倍', body: '你最近经常来。首充有一份限时双倍奖励。' } } ],
+              no: [ { id: 'gf-pushlo', type: 'action', label: 'App Push', description: 'AI Write · 新手首充引导礼包', channel: 'app_push', keep: true, message: { title: '新手首充引导', body: '这是给新账号的首充引导礼包。' } } ] } ] },
+          { id: 'gf-w1', type: 'waitEvent', label: '等待事件', description: '24h 内等待 充值成功', yesLabel: '已充值', noLabel: '超时未充值',
+            yes: [ { id: 'gf-ok1', type: 'end', label: '结束 · 首充完成', description: '' } ],
+            no: [ { id: 'gf-st', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gf-sms', type: 'action', label: 'SMS', description: '首充活动即将到期提醒', channel: 'sms', message: { title: '首充活动即将到期', body: '首充活动即将到期，账户仍是 0。' } },
+          { id: 'gf-end', type: 'end', label: '结束', description: '不可再次进入' },
         ],
       },
       {
@@ -445,16 +476,16 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '打开过收银台 · 未支付',
-        description: '先等 5 分钟。未支付则 Push 回到收银台，1 小时后再发 WhatsApp。',
+        description: '先等 5 分钟。未完成则 Push。1 小时仍未完成则 WhatsApp。',
         steps: [
-          { id: 'gcashier-trigger', type: 'trigger', label: '打开收银台', description: '触发：点击充值或访问充值页，且已认证' },
-          { id: 'gcashier-delay', type: 'delay', label: '等待 5 分钟', description: '看支付会不会自己完成' },
-          { id: 'gcashier-condition', type: 'condition', label: '支付了吗？', description: '决策节点', conditionLabel: '已支付？' },
-          { id: 'gcashier-yes', type: 'tag', label: '已支付', description: '充值完成，旅程结束。', branchType: 'yes' },
-          { id: 'gcashier-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gcashier-push', type: 'action', label: 'App Push', description: '一键回到收银台', channel: 'app_push', branchType: 'no', message: { title: '充值还没完成', body: '收银台还开着。点开即可回到刚才的充值。' } },
-          { id: 'gcashier-delay2', type: 'delay', label: '等待 1 小时', description: '继续等支付', branchType: 'no' },
-          { id: 'gcashier-wa', type: 'action', label: 'WhatsApp', description: '限时充值礼包', channel: 'whatsapp', branchType: 'no', message: { title: '充值礼包限时开放', body: '刚才的充值没有完成。\n\n限时充值礼包还挂在这个账号上。' } },
+          { id: 'gca-start', type: 'trigger', label: '开始', description: '事件: 访问充值页或点击充值按钮' },
+          { id: 'gca-w0', type: 'waitEvent', label: '等待事件', description: '5min 内等待 充值成功', yesLabel: '已完成', noLabel: '超时未完成',
+            yes: [ { id: 'gca-ok0', type: 'end', label: '结束 · 充值完成', description: '' } ],
+            no: [ { id: 'gca-push', type: 'action', label: 'App Push', description: 'AI Write · 充值提醒 + 活动 deep link', channel: 'app_push', message: { title: '充值提醒', body: '收银台还开着。点开即可回到刚才的充值。' } } ] },
+          { id: 'gca-w1', type: 'waitEvent', label: '等待事件', description: '1h 内等待 充值成功', yesLabel: '已完成', noLabel: '超时未完成',
+            yes: [ { id: 'gca-ok1', type: 'end', label: '结束 · 充值完成', description: '' } ],
+            no: [ { id: 'gca-wa', type: 'action', label: 'WhatsApp', description: '充值礼包限时活动提醒', channel: 'whatsapp', message: { title: '充值礼包限时', body: '刚才的充值没有完成。\n\n限时充值礼包还挂在这个账号上。' } } ] },
+          { id: 'gca-end', type: 'end', label: '结束', description: '1 小时后可再次进入' },
         ],
       },
       {
@@ -465,20 +496,25 @@
         color: 'purple',
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
-        userSegment: '超过 3 天未登录',
-        description: '第 3 天发回归礼包。仍未登录，则第 4、5、6 天逐日加码。',
+        userSegment: '最后登录距今超过 72 小时',
+        description: '第 3 天发回归礼包。之后每等 1 天，登录即结束；超时则经可发送时间发下一天，直到第 6 天。',
         steps: [
-          { id: 'gs-trigger', type: 'trigger', label: '3 日未登录', description: '触发：最后登录已超过 3 天' },
-          { id: 'gs-push', type: 'action', label: '第 3 天 Push', description: '好久不见，附回归礼包', channel: 'app_push', message: { title: '座位还留着', body: '已经 3 天没来。回归礼包放在账号上。' } },
-          { id: 'gs-delay', type: 'delay', label: '等待 1 天', description: '看有没有登录' },
-          { id: 'gs-condition', type: 'condition', label: '登录了吗？', description: '决策节点', conditionLabel: '已回来？' },
-          { id: 'gs-yes', type: 'tag', label: '已回流', description: '登录发生，旅程结束。', branchType: 'yes' },
-          { id: 'gs-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gs-d4', type: 'action', label: '第 4 天 Push', description: '新活动', channel: 'app_push', branchType: 'no', message: { title: '新场次已开', body: '第 4 天。新活动已开，回归礼包还在。' } },
-          { id: 'gs-wait4', type: 'delay', label: '等待 1 天', description: '仍未登录', branchType: 'no' },
-          { id: 'gs-d5', type: 'action', label: '第 5 天 Push', description: '专属奖励', channel: 'app_push', branchType: 'no', message: { title: '专属回归奖励', body: '第 5 天。一份专属奖励留在这个座位上。' } },
-          { id: 'gs-wait5', type: 'delay', label: '等待 1 天', description: '下一条是最后机会', branchType: 'no' },
-          { id: 'gs-d6', type: 'action', label: '第 6 天 Push', description: '最后机会', channel: 'app_push', branchType: 'no', message: { title: '回归礼包最后一天', body: '第 6 天。这是回归礼包关闭前的最后一条。' } },
+          { id: 'gs-start', type: 'trigger', label: '开始', description: '属性: 最后登录时间距今超过72小时' },
+          { id: 'gs-st0', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' },
+          { id: 'gs-d3', type: 'action', label: 'App Push', description: 'AI Write · 第3天: 回归礼包等你', channel: 'app_push', message: { title: '回归礼包等你', body: '已经 3 天没来。回归礼包放在账号上。' } },
+          { id: 'gs-w1', type: 'waitEvent', label: '等待事件', description: '1天内等待 登录', yesLabel: '已登录', noLabel: '超时未登录',
+            yes: [ { id: 'gs-ok1', type: 'end', label: '结束 · 登录成功', description: '返回活跃用户池' } ],
+            no: [ { id: 'gs-st1', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gs-d4', type: 'action', label: 'App Push', description: 'AI Write · 第4天: 新活动上线', channel: 'app_push', message: { title: '新活动上线', body: '第 4 天。新活动已开，回归礼包还在。' } },
+          { id: 'gs-w2', type: 'waitEvent', label: '等待事件', description: '1天内等待 登录', yesLabel: '已登录', noLabel: '超时未登录',
+            yes: [ { id: 'gs-ok2', type: 'end', label: '结束 · 登录成功', description: '' } ],
+            no: [ { id: 'gs-st2', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gs-d5', type: 'action', label: 'App Push', description: 'AI Write · 第5天: 专属奖励', channel: 'app_push', message: { title: '专属奖励', body: '第 5 天。一份专属奖励留在这个座位上。' } },
+          { id: 'gs-w3', type: 'waitEvent', label: '等待事件', description: '1天内等待 登录', yesLabel: '已登录', noLabel: '超时未登录',
+            yes: [ { id: 'gs-ok3', type: 'end', label: '结束 · 登录成功', description: '' } ],
+            no: [ { id: 'gs-st3', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gs-d6', type: 'action', label: 'App Push', description: 'AI Write · 第6天: 最后机会', channel: 'app_push', message: { title: '最后机会', body: '第 6 天。这是回归礼包关闭前的最后一条。' } },
+          { id: 'gs-end', type: 'end', label: '结束', description: '30分钟后可再次进入' },
         ],
       },
       {
@@ -490,14 +526,18 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '黄金 VIP · 11–16 级',
-        description: '升到 12 级发「再差 1 级晋升铂金」。13–16 级发常规升级福利。',
+        description: '监听到升级后，12 级发「差 1 级晋升铂金」，13–16 级发常规升级福利。',
         steps: [
-          { id: 'gv-trigger', type: 'trigger', label: '黄金 VIP 段', description: '触发：VIP 等级在 11 到 16' },
-          { id: 'gv-listen', type: 'tag', label: '监听升级', description: '等待 VIP 等级提升' },
-          { id: 'gv-condition', type: 'condition', label: '升到 12 级了吗？', description: '再差 1 级到铂金', conditionLabel: '12 级？' },
-          { id: 'gv-yes', type: 'action', label: '铂金冲刺', description: '12 级，再差 1 级到铂金', channel: 'app_push', branchType: 'yes', message: { title: '再差 1 级晋升铂金', body: '刚到 12 级。再升 1 级，这个账号进入铂金 VIP。' } },
-          { id: 'gv-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gv-plat', type: 'action', label: '常规升级', description: '13–16 级，领取升级福利', channel: 'app_push', branchType: 'no', message: { title: '等级已提升', body: '已到达新的 VIP 等级。升级福利可以领取。' } },
+          { id: 'gv-start', type: 'trigger', label: '开始', description: '属性: VIP 等级 ≥11 且 ≤16' },
+          { id: 'gv-listen', type: 'listen', label: '监听事件', description: '事件: VIP 等级提升', yesLabel: '等级=12', noLabel: '等级 13–16',
+            yes: [
+              { id: 'gv-near', type: 'action', label: 'App Push', description: '等级 12: 差 1 级晋升铂金 VIP！', channel: 'app_push', keep: true, message: { title: '差 1 级晋升铂金', body: '刚到 12 级。再升 1 级，这个账号进入铂金 VIP。' } },
+              { id: 'gv-end-near', type: 'end', label: '结束', description: '再次进入: 5分钟后' },
+            ],
+            no: [
+              { id: 'gv-reg', type: 'action', label: 'App Push', description: 'AI Write · 恭喜达到 N 级 + 领取福利', channel: 'app_push', keep: true, message: { title: '恭喜达到新等级', body: '已到达新的 VIP 等级。升级福利可以领取。' } },
+              { id: 'gv-end-reg', type: 'end', label: '结束', description: '再次进入: 5分钟后' },
+            ] },
         ],
       },
       {
@@ -509,17 +549,19 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '上周返利 ≥ 10',
-        description: '周一通知领取。1 天未领再 Push，4 天后 SMS 提示即将过期。已领取的周六收到下周预告。',
+        description: '周一通知领取。1 天未领再 Push，4 天仍未领则在可发送时间发 SMS。',
         steps: [
-          { id: 'gr-trigger', type: 'trigger', label: '周一 9:00', description: '触发：上周返利不少于 10' },
-          { id: 'gr-push', type: 'action', label: '领取 Push', description: '周一通知去领返利', channel: 'app_push', message: { title: '本周返利可领取', body: '上周返利已生成。到奖励页领取。' } },
-          { id: 'gr-delay', type: 'delay', label: '等待 1 天', description: '看有没有领取' },
-          { id: 'gr-condition', type: 'condition', label: '领取了吗？', description: '决策节点', conditionLabel: '已领取？' },
-          { id: 'gr-yes', type: 'action', label: '周六预告', description: '已领取。周六提醒下周再来', channel: 'app_push', branchType: 'yes', message: { title: '下周返利预告', body: '本周已领取。周六会再提醒下一周的返利。' } },
-          { id: 'gr-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gr-push2', type: 'action', label: 'App Push', description: '1 天仍未领取', channel: 'app_push', branchType: 'no', message: { title: '返利还没领', body: '昨天的通知还开着。本周返利尚未领取。' } },
-          { id: 'gr-delay2', type: 'delay', label: '等待 4 天', description: '临近过期', branchType: 'no' },
-          { id: 'gr-sms', type: 'action', label: 'SMS', description: '返利即将过期', channel: 'sms', branchType: 'no', message: { title: '返利即将过期', body: '本周返利即将过期。打开 App，在窗口关闭前领取。' } },
+          { id: 'gr-start', type: 'trigger', label: '开始', description: '属性: 上周返利金额 ≥10' },
+          { id: 'gr-mon', type: 'sendtime', label: '可发送时间', description: '每周一 9:00 发布' },
+          { id: 'gr-claim', type: 'action', label: 'App Push', description: 'AI Write · 本周返利可领取了！', channel: 'app_push', message: { title: '本周返利可领取', body: '上周返利已生成。到奖励页领取。' } },
+          { id: 'gr-w1', type: 'waitEvent', label: '等待事件', description: '1天内等待 领取返利', yesLabel: '已领取', noLabel: '超时未领取',
+            yes: [ { id: 'gr-ok1', type: 'end', label: '已领取 → 分支2', description: '进入预告流程' } ],
+            no: [ { id: 'gr-remind', type: 'action', label: 'App Push', description: 'AI Write · 返利尚未领取提醒', channel: 'app_push', message: { title: '返利尚未领取', body: '周一的通知还开着。本周返利尚未领取。' } } ] },
+          { id: 'gr-w2', type: 'waitEvent', label: '等待事件', description: '4天内等待 领取返利', yesLabel: '已领取', noLabel: '超时未领取',
+            yes: [ { id: 'gr-ok2', type: 'end', label: '已领取', description: '' } ],
+            no: [ { id: 'gr-st', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' } ] },
+          { id: 'gr-sms', type: 'action', label: 'SMS', description: '返利即将过期提醒', channel: 'sms', message: { title: '返利即将过期', body: '本周返利即将过期。打开 App，在窗口关闭前领取。' } },
+          { id: 'gr-end', type: 'end', label: '结束', description: '18小时后可再次进入' },
         ],
       },
       {
@@ -531,15 +573,13 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '刚登录 · 次日回访前',
-        description: '每次登录后 23 小时发签到 Push。连续 7 天解锁双倍。',
+        description: '登录后等待 23 小时，在可发送时间内发签到提醒。',
         steps: [
-          { id: 'gk-trigger', type: 'trigger', label: '用户登录', description: '触发：每次登录都可以再进入' },
-          { id: 'gk-delay', type: 'delay', label: '等待 23 小时', description: '赶在次日回访窗口之前' },
-          { id: 'gk-push', type: 'action', label: '签到 Push', description: '奖励预告，连续 7 天双倍', channel: 'app_push', message: { title: '今日签到', body: '今日签到得 50 游戏币。连续 7 天解锁双倍。' } },
-          { id: 'gk-condition', type: 'condition', label: '签到了吗？', description: '决策节点', conditionLabel: '已签到？' },
-          { id: 'gk-yes', type: 'tag', label: '已签到', description: '今日签到完成。', branchType: 'yes' },
-          { id: 'gk-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gk-no', type: 'end', label: '结束', description: '不再追加第二条。这次登录周期结束。', branchType: 'no' },
+          { id: 'gk-start', type: 'trigger', label: '开始', description: '事件: 用户登录' },
+          { id: 'gk-wait', type: 'delay', label: '等待', description: '23 小时' },
+          { id: 'gk-st', type: 'sendtime', label: '可发送时间', description: '终端时区 9:00–21:00' },
+          { id: 'gk-push', type: 'action', label: 'App Push', description: 'AI Write · 签到提醒 + 今日奖励预告', channel: 'app_push', message: { title: '今日签到', body: '今日签到得 50 游戏币。连续 7 天解锁双倍。' } },
+          { id: 'gk-end', type: 'end', label: '结束', description: '2分钟后可再次进入' },
         ],
       },
       {
@@ -551,13 +591,18 @@
         bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
         borderColor: 'border-[#5A69E0]',
         userSegment: '已认证 · 至少邀请 1 人',
-        description: '好友注册后，命中 5、20、100 等档位即发领奖通知。差 2 人则发冲刺提醒。',
+        description: '监听到好友注册后，命中 5、20、100 等档位发领奖，差 2 人发冲刺。',
         steps: [
-          { id: 'gi-trigger', type: 'trigger', label: '好友注册', description: '触发：已认证，邀请不少于 1 人，刚有好友注册' },
-          { id: 'gi-condition', type: 'condition', label: '命中领奖档？', description: '5、20、100、200、500、1000', conditionLabel: '达标？' },
-          { id: 'gi-yes', type: 'action', label: '领奖通知', description: '人数正好落在奖励档', channel: 'app_push', branchType: 'yes', message: { title: '邀请奖励可领取', body: '刚有好友注册，邀请人数命中奖励档。现在可以领取。' } },
-          { id: 'gi-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
-          { id: 'gi-sprint', type: 'action', label: '还差 2 人', description: '人数为 3、18、98、198、498、998', channel: 'app_push', branchType: 'no', message: { title: '再邀 2 人可领下一档', body: '刚有好友注册。再邀 2 人就到下一档奖励。' } },
+          { id: 'gi-start', type: 'trigger', label: '开始', description: '属性: 已认证 · 邀请人数 ≥1' },
+          { id: 'gi-listen', type: 'listen', label: '监听事件', description: '事件: 好友注册 (多分支)', yesLabel: '邀请 5/20/100…', noLabel: '邀请 3/18/98…',
+            yes: [
+              { id: 'gi-reward', type: 'action', label: 'App Push', description: 'AI Write · 恭喜达标！立即领奖励', channel: 'app_push', keep: true, message: { title: '恭喜达标', body: '刚有好友注册，邀请人数命中奖励档。现在可以领取。' } },
+              { id: 'gi-end-reward', type: 'end', label: '结束', description: '2分钟后可再次进入' },
+            ],
+            no: [
+              { id: 'gi-near', type: 'action', label: 'App Push', description: 'AI Write · 还差2人即可领下一奖励！', channel: 'app_push', keep: true, message: { title: '还差 2 人', body: '刚有好友注册。再邀 2 人就到下一档奖励。' } },
+              { id: 'gi-end-near', type: 'end', label: '结束', description: '2分钟后可再次进入' },
+            ] },
         ],
       },
     ];
@@ -605,7 +650,10 @@
           case 'trigger': return <span className={iconClass}><Icons.Zap /></span>;
           case 'tag': return <span className={iconClass}><Icons.Tag /></span>;
           case 'condition': return <span className={iconClass}><Icons.Users /></span>;
-          case 'delay': return <span className={iconClass}><Icons.Timer /></span>;
+          case 'delay':
+          case 'sendtime':
+          case 'waitEvent': return <span className={iconClass}><Icons.Timer /></span>;
+          case 'listen': return <span className={iconClass}><Icons.Eye /></span>;
           default:
             if (step.channel && channelIcons[step.channel]) {
               const IconComp = channelIcons[step.channel];
@@ -618,7 +666,8 @@
       if (step.type === 'end') {
         return (
           <div style={{ animationDelay: `${index * 0.1}s` }} className="flex flex-col items-center animate-slide-up">
-            <div className={`rounded-full px-6 py-2 border-2 text-sm font-semibold ${getNodeStyle()}`}>{step.label}</div>
+            <div className={`rounded-full px-6 py-2 border-2 text-sm font-semibold text-center ${getNodeStyle()}`}>{step.label}</div>
+            {step.description ? <div className="mt-1 max-w-[200px] text-center text-[11px] leading-snug text-gray-500">{step.description}</div> : null}
           </div>
         );
       }
@@ -634,15 +683,16 @@
               <>
                 {getIconForStep()}
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span className="font-semibold text-sm truncate">{step.label}</span>
-                  <span className={`text-xs truncate ${isActive ? 'text-white/80' : isCompleted ? 'text-[#394551]/70' : 'text-gray-500'}`}>{step.description}</span>
+                  <span className="font-semibold text-sm">{step.label}</span>
+                  <span className={`text-xs leading-snug ${isActive ? 'text-white/80' : isCompleted ? 'text-[#394551]/70' : 'text-gray-500'}`}>{step.description}</span>
                 </div>
               </>
             )}
           </div>
-          {step.type === 'condition' && step.conditionLabel && (
-            <div className={`text-xs font-medium px-3 py-1 rounded-full mt-1 ${isActive || isCompleted ? 'bg-[#CEFB62]/20 text-[#394551]' : 'bg-gray-100 text-gray-600'}`}>
-              {step.conditionLabel}
+          {step.type === 'condition' && (
+            <div className="text-center mt-1">
+              <div className={`text-xs font-semibold ${isActive || isCompleted ? 'text-[#394551]' : 'text-gray-600'}`}>{step.label}</div>
+              {step.description ? <div className="text-[11px] text-gray-500">{step.description}</div> : null}
             </div>
           )}
         </div>
@@ -680,9 +730,12 @@
         return { isActive: false, isCompleted: false, isPending: true };
       };
 
-      const col = 240;
-      const gap = 72;
-      const width = col * 2 + gap;
+      const col = 250;
+      const gap = 56;
+      const spanOf = (list) => ((list || []).some((s) => s.yes || s.no) ? col * 2 + gap : col);
+      const yesW = spanOf(yesSteps);
+      const noW = spanOf(noSteps);
+      const width = yesW + noW + gap;
       const forkClass = conditionState.isCompleted ? 'bg-[#CEFB62]' : conditionState.isActive ? 'bg-[#5A69E0]' : 'bg-gray-300';
 
       const branchDone = (branchSteps) => {
@@ -705,25 +758,37 @@
           ? (conditionState.isCompleted ? 'bg-[#5A69E0] text-white' : conditionState.isActive ? 'bg-[#5A69E0]/20 text-[#5A69E0]' : 'bg-gray-100 text-gray-500')
           : (conditionState.isCompleted ? 'bg-gray-500 text-white' : conditionState.isActive ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-500');
         return (
-          <div key={side} className="flex flex-col items-center" style={{ width: col }}>
+          <div key={side} className="flex flex-col items-center" style={{ width: isYes ? yesW : noW }}>
             <div className={`h-4 w-0.5 ${forkClass}`} />
-            <div className={`text-xs font-medium px-3 py-1 rounded-full ${pillClass}`}>{isYes ? ui.yes : ui.no}</div>
+            <div className={`text-xs font-medium px-3 py-1 rounded-full text-center ${pillClass}`}>{isYes ? (conditionStep.yesLabel || ui.yes) : (conditionStep.noLabel || ui.no)}</div>
             <div className={`h-4 w-0.5 ${forkClass}`} />
             {branchSteps.length > 0 ? (
               <div className="flex w-full flex-col items-center">
                 {branchSteps.map((step, idx) => {
                   const stepIndex = steps.findIndex(s => s.id === step.id);
                   const state = getBranchStepState(stepIndex);
+                  const nested = step.yes || step.no;
                   return (
                     <React.Fragment key={step.id}>
-                      <WorkflowNode
-                        step={step}
-                        isActive={state.isActive}
-                        isCompleted={state.isCompleted}
-                        isPending={state.isPending}
-                        index={stepIndex}
-                        boxed
-                      />
+                      {nested ? (
+                        <BranchSection
+                          conditionStep={step}
+                          yesSteps={step.yes || []}
+                          noSteps={step.no || []}
+                          currentStepIndex={currentStepIndex}
+                          steps={steps}
+                          ui={ui}
+                        />
+                      ) : (
+                        <WorkflowNode
+                          step={step}
+                          isActive={state.isActive}
+                          isCompleted={state.isCompleted}
+                          isPending={state.isPending}
+                          index={stepIndex}
+                          boxed
+                        />
+                      )}
                       {idx < branchSteps.length - 1 && (
                         <div className={`h-8 w-0.5 ${state.isCompleted ? 'bg-[#CEFB62]' : 'bg-gray-300'}`} />
                       )}
@@ -755,7 +820,7 @@
 
           <div style={{ width }}>
             <div className="relative">
-              <div className={`absolute top-0 h-0.5 ${forkClass}`} style={{ left: col / 2, width: col + gap }} />
+              <div className={`absolute top-0 h-0.5 ${forkClass}`} style={{ left: yesW / 2, width: yesW / 2 + gap + noW / 2 }} />
               <div className="flex items-stretch" style={{ gap }}>
                 {renderBranchColumn(yesSteps, 'yes')}
                 {renderBranchColumn(noSteps, 'no')}
@@ -763,7 +828,7 @@
             </div>
             {showMerge && (
               <div className="relative h-0.5">
-                <div className={`absolute top-0 h-0.5 ${mergeClass}`} style={{ left: col / 2, width: col + gap }} />
+                <div className={`absolute top-0 h-0.5 ${mergeClass}`} style={{ left: yesW / 2, width: yesW / 2 + gap + noW / 2 }} />
               </div>
             )}
           </div>
@@ -807,6 +872,22 @@
       }
       
       return sections;
+    };
+
+    const flattenSteps = (nodes, branchType) => {
+      const out = [];
+      (nodes || []).forEach((node) => {
+        const copy = Object.assign({}, node);
+        delete copy.yes;
+        delete copy.no;
+        if (branchType) copy.branchType = branchType;
+        out.push(copy);
+        if (node.yes || node.no) {
+          out.push.apply(out, flattenSteps(node.yes, 'yes'));
+          out.push.apply(out, flattenSteps(node.no, 'no'));
+        }
+      });
+      return out;
     };
 
     // ============ Message Card Component ============
@@ -1148,6 +1229,10 @@
       const [isCompleted, setIsCompleted] = useState(false);
 
       const activeScenario = SCEN.find(s => s.id === activeScenarioId);
+      const playSteps = React.useMemo(
+        () => (activeScenario ? flattenSteps(activeScenario.steps) : []),
+        [activeScenario]
+      );
 
       useEffect(() => {
         document.documentElement.lang = isCn ? 'zh-CN' : 'en';
@@ -1176,20 +1261,20 @@
           return () => clearTimeout(timer);
         }
 
-        if (currentStepIndex >= activeScenario.steps.length) {
+        if (currentStepIndex >= playSteps.length) {
           setIsPlaying(false);
           setIsCompleted(true);
           return;
         }
 
-        const currentStep = activeScenario.steps[currentStepIndex];
+        const currentStep = playSteps[currentStepIndex];
 
         if (currentStep.branchType === 'no') {
-          const prevStep = currentStepIndex > 0 ? activeScenario.steps[currentStepIndex - 1] : null;
-          if (prevStep && (prevStep.type === 'condition' || prevStep.branchType === 'yes')) {
+          const prevStep = currentStepIndex > 0 ? playSteps[currentStepIndex - 1] : null;
+          if (prevStep && (prevStep.type === 'condition' || prevStep.type === 'waitEvent' || prevStep.type === 'listen' || prevStep.branchType === 'yes')) {
             setMessages(prev => prev.filter(msg => {
-              return !activeScenario.steps.some(s => 
-                s.branchType === 'yes' && s.id === msg.stepId
+              return !playSteps.some(s =>
+                s.branchType === 'yes' && !s.keep && s.id === msg.stepId
               );
             }));
           }
@@ -1208,7 +1293,7 @@
 
         const timer = setTimeout(() => setCurrentStepIndex(prev => prev + 1), 1500);
         return () => clearTimeout(timer);
-      }, [isPlaying, currentStepIndex, activeScenario]);
+      }, [isPlaying, currentStepIndex, activeScenario, playSteps]);
 
       const getStepState = (index) => {
         if (!activeScenario) return { isActive: false, isCompleted: false, isPending: true };
@@ -1232,8 +1317,9 @@
       const renderWorkflowContent = () => {
         if (!activeScenario) return null;
 
-        const sections = parseStepsToSections(activeScenario.steps);
-        const steps = activeScenario.steps;
+        const treeMode = activeScenario.steps.some((step) => step.yes || step.no);
+        const sections = treeMode ? [] : parseStepsToSections(activeScenario.steps);
+        const steps = playSteps;
 
         return (
           <div className="flex flex-col items-center">
@@ -1247,7 +1333,28 @@
             </div>
 
             <div className="flex flex-col items-center gap-0">
-              {sections.map((section, sectionIdx) => {
+              {treeMode ? activeScenario.steps.map((step, idx) => {
+                const stepIndex = steps.findIndex((item) => item.id === step.id);
+                const state = getStepState(stepIndex);
+                const nested = step.yes || step.no;
+                return (
+                  <React.Fragment key={step.id}>
+                    {idx > 0 && <VerticalConnector isActive={state.isActive} isCompleted={state.isCompleted} />}
+                    {nested ? (
+                      <BranchSection
+                        conditionStep={step}
+                        yesSteps={step.yes || []}
+                        noSteps={step.no || []}
+                        currentStepIndex={currentStepIndex}
+                        steps={steps}
+                        ui={UI}
+                      />
+                    ) : (
+                      <WorkflowNode step={step} isActive={state.isActive} isCompleted={state.isCompleted} isPending={state.isPending} index={stepIndex} />
+                    )}
+                  </React.Fragment>
+                );
+              }) : sections.map((section, sectionIdx) => {
                 if (section.type === 'linear') {
                   const stepIndex = steps.findIndex(s => s.id === section.step.id);
                   const { isActive, isCompleted, isPending } = getStepState(stepIndex);
@@ -1396,7 +1503,7 @@
                   )}
                 </div>
 
-                <div className="p-8 flex-1 overflow-y-auto scrollbar-hide">
+                <div className="p-8 flex-1 overflow-auto scrollbar-hide">
                   {!activeScenario ? (
                     <div className="h-full flex flex-col items-center justify-center text-center py-12">
                       <div className="w-20 h-20 rounded-2xl bg-[#5A69E0]/5 flex items-center justify-center mb-4">
