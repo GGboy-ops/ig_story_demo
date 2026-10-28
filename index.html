@@ -712,7 +712,7 @@
     );
 
     // ============ Branch Section Component ============
-    const BranchSection = ({ conditionStep, yesSteps, noSteps, currentStepIndex, steps, onRenderStep, ui }) => {
+    const BranchSection = ({ conditionStep, yesSteps, noSteps, currentStepIndex, steps, onRenderStep, ui, rejoinSpine }) => {
       const conditionIndex = steps.findIndex(s => s.id === conditionStep.id);
       const yesIndices = yesSteps.map(s => steps.findIndex(s2 => s2.id === s.id));
       const noIndices = noSteps.map(s => steps.findIndex(s2 => s2.id === s.id));
@@ -745,15 +745,19 @@
       };
       const yesDone = branchDone(yesSteps);
       const noDone = branchDone(noSteps);
-      const yesExits = yesSteps.some(step => step.type === 'end');
-      const noExits = noSteps.some(step => step.type === 'end');
+      const sideExits = (list) => (list || []).some(step => step.type === 'end');
+      const yesExits = sideExits(yesSteps);
+      const noExits = sideExits(noSteps);
       const showMerge = !yesExits && !noExits;
-      const mergeClass = yesDone && noDone ? 'bg-[#CEFB62]' : 'bg-gray-300';
+      const rejoin = rejoinSpine && yesExits !== noExits ? (yesExits ? 'no' : 'yes') : null;
+      const rejoinDone = rejoin === 'yes' ? yesDone : noDone;
+      const mergeClass = (showMerge ? yesDone && noDone : rejoinDone) ? 'bg-[#CEFB62]' : 'bg-gray-300';
 
       const renderBranchColumn = (branchSteps, side) => {
         const isYes = side === 'yes';
         const done = isYes ? yesDone : noDone;
         const tailClass = done ? 'bg-[#CEFB62]' : 'bg-gray-300';
+        const drawTail = showMerge || rejoin === side;
         const pillClass = isYes
           ? (conditionState.isCompleted ? 'bg-[#5A69E0] text-white' : conditionState.isActive ? 'bg-[#5A69E0]/20 text-[#5A69E0]' : 'bg-gray-100 text-gray-500')
           : (conditionState.isCompleted ? 'bg-gray-500 text-white' : conditionState.isActive ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-500');
@@ -778,6 +782,7 @@
                           currentStepIndex={currentStepIndex}
                           steps={steps}
                           ui={ui}
+                          rejoinSpine={idx < branchSteps.length - 1 || drawTail}
                         />
                       ) : (
                         <WorkflowNode
@@ -801,7 +806,7 @@
                 {ui.noFurther}
               </div>
             )}
-            {showMerge && <div className={`w-0.5 flex-1 ${tailClass}`} style={{ minHeight: 24 }} />}
+            {drawTail && <div className={`w-0.5 flex-1 ${tailClass}`} style={{ minHeight: 28 }} />}
           </div>
         );
       };
@@ -829,6 +834,16 @@
             {showMerge && (
               <div className="relative h-0.5">
                 <div className={`absolute top-0 h-0.5 ${mergeClass}`} style={{ left: yesW / 2, width: yesW / 2 + gap + noW / 2 }} />
+              </div>
+            )}
+            {rejoin === 'no' && (
+              <div className="relative h-0.5">
+                <div className={`absolute top-0 h-0.5 ${mergeClass}`} style={{ left: width / 2, width: yesW + gap + noW / 2 - width / 2 }} />
+              </div>
+            )}
+            {rejoin === 'yes' && (
+              <div className="relative h-0.5">
+                <div className={`absolute top-0 h-0.5 ${mergeClass}`} style={{ left: yesW / 2, width: width / 2 - yesW / 2 }} />
               </div>
             )}
           </div>
@@ -1348,6 +1363,7 @@
                         currentStepIndex={currentStepIndex}
                         steps={steps}
                         ui={UI}
+                        rejoinSpine={idx < activeScenario.steps.length - 1}
                       />
                     ) : (
                       <WorkflowNode step={step} isActive={state.isActive} isCompleted={state.isCompleted} isPending={state.isPending} index={stepIndex} />
