@@ -1,0 +1,1171 @@
+<!DOCTYPE html><html lang="en"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; img-src 'self' data: blob: https://img.engagelab.net https://www.coze.cn; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EngageLab MA Customer Lifecycle Automation Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#5A69E0',
+              dark: '#394551',
+              green: '#CEFB62',
+              purpleLight: '#EEF0FD',
+              purpleDark: '#3D4DB7',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f8f9fc 0%, #eef0fd 50%, #f8f9fc 100%);
+      min-height: 100vh;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(50px) scale(0.9); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-pulse-custom { animation: pulse 2s ease-in-out infinite; }
+    .animate-spin-custom { animation: spin 1s linear infinite; }
+    .animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin=""></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin=""></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ============ Icons ============
+    const Icons = {
+      Mail: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+      MessageCircle: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+      Smartphone: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>,
+      Bell: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
+      Globe: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0 3-4.03 3-9s-1.343-9-3-9m-9 9a9 9 0 019-9" /></svg>,
+      UserPlus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>,
+      ShoppingCart: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
+      Eye: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>,
+      Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      Crown: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" /></svg>,
+      Zap: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+      Users: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+      Tag: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>,
+      Timer: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      Send: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>,
+      Check: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+      ArrowRight: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
+      ArrowDown: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>,
+      RefreshCw: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+      TrendingUp: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+      Sparkles: () => <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
+    };
+
+
+    // ============ Bilingual scenario data ============
+    const scenariosEn = [
+      {
+        id: 'recall',
+        name: '5-Day Lapse → Comeback',
+        icon: 'Clock',
+        color: 'purple',
+        bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
+        borderColor: 'border-[#5A69E0]',
+        userSegment: 'Inactive 5 days · 75-ball unwon',
+        description: 'App Push first. If it is not opened in 24 hours, follow with email and a last Web Push.',
+        steps: [
+          { id: 'rc-trigger', type: 'trigger', label: 'Inactive 5 days', description: 'Trigger: no login for 5 days, 75-ball unwon in 7 days' },
+          { id: 'rc-tag', type: 'tag', label: 'Tag comeback seat', description: 'Tag "5-day lapse, 75-ball unwon"' },
+          { id: 'rc-push', type: 'action', label: 'App Push', description: 'Lucky Bingo, ₱500, 24 hours', channel: 'app_push', message: { title: 'Lucky Bingo', body: '₱500 in comeback cards is on your seat for 24 hours.' } },
+          { id: 'rc-delay', type: 'delay', label: 'Wait 24 hours', description: 'Watch for an open' },
+          { id: 'rc-condition', type: 'condition', label: 'Push opened?', description: 'Decision node', conditionLabel: 'Opened?' },
+          { id: 'rc-yes', type: 'tag', label: 'Returned', description: 'Player opened the push. Journey stops.', branchType: 'yes' },
+          { id: 'rc-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
+          { id: 'rc-email', type: 'action', label: 'Comeback email', description: 'Seat and ₱500 are still there', channel: 'email', branchType: 'no', message: { subject: 'Your ₱500 comeback cards expire tonight', title: 'Lucky Express kept your seat', body: 'Maria,\n\nLucky Express kept your seat. ₱500 in comeback cards stays on the account for 24 hours.\n\nJoin the next 75-ball round before they expire.', preview: '₱500 in comeback cards stays on the account for 24 hours.' } },
+          { id: 'rc-web', type: 'action', label: 'Web Push', description: 'Last reminder before the cards expire', channel: 'web_push', branchType: 'no', message: { title: 'Last chance at Lucky Express', body: 'The ₱500 comeback cards expire in a few hours. Open the hall to use them.' } },
+        ],
+      },
+      {
+        id: 'jackpot',
+        name: 'Lobby Dwell → Jackpot',
+        icon: 'Crown',
+        color: 'purple',
+        bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
+        borderColor: 'border-[#5A69E0]',
+        userSegment: 'In the lobby · Mega Jackpot live',
+        description: 'Nudge players who have not bought cards, then send the round recap.',
+        steps: [
+          { id: 'jk-trigger', type: 'trigger', label: 'Entered the lobby', description: 'Trigger: weekend Mega Jackpot is live, pool ₱500,000' },
+          { id: 'jk-delay', type: 'delay', label: 'Wait 15 minutes', description: 'Still in the lobby, no cards bought' },
+          { id: 'jk-condition', type: 'condition', label: 'Cards bought?', description: 'Decision node', conditionLabel: 'Bought?' },
+          { id: 'jk-yes', type: 'tag', label: 'Already in', description: 'Skip the nudge.', branchType: 'yes' },
+          { id: 'jk-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
+          { id: 'jk-push', type: 'action', label: 'App Push', description: 'Buy 6 cards, get 2 free', channel: 'app_push', branchType: 'no', message: { title: 'Mega Jackpot', body: 'Buy 6 cards, get 2 free. The draw starts in 15 minutes.' } },
+          { id: 'jk-result', type: 'tag', label: 'Round closed', description: '18th of 214. Pattern 3 of 5.', branchType: 'no' },
+          { id: 'jk-email', type: 'action', label: 'Recap email', description: 'Rank, pattern, next pool, early-bird coupon', channel: 'email', branchType: 'no', message: { subject: '18th of 214, next pool is Sunday', title: 'Your Mega Jackpot recap', body: 'You placed 18th of 214.\n\nPattern progress is 3 of 5.\n\nThe next ₱500,000 jackpot opens Sunday. An early-bird coupon is on this seat.', preview: 'Pattern progress is 3 of 5. Next pool opens Sunday.' } },
+        ],
+      },
+      {
+        id: 'gcash',
+        name: 'GCash Paid → Pack Missing',
+        icon: 'MessageCircle',
+        color: 'purple',
+        bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
+        borderColor: 'border-[#5A69E0]',
+        userSegment: 'Paid ₱200 · Card pack not credited',
+        description: 'Agent replies first. After Still nothing, the chat is handed to a person, who credits the pack.',
+        steps: [
+          { id: 'gc-trigger', type: 'trigger', label: 'GCash confirmed', description: 'Trigger: ₱200 paid, card pack still 0' },
+          { id: 'gc-tag', type: 'tag', label: 'Tag missing pack', description: 'Order GC48291736, paid and not credited' },
+          { id: 'gc-open', type: 'action', label: 'Player opens Help', description: 'Asks about the missing pack', channel: 'help', message: { speaker: 'user', badge: 'Player', title: 'Maria', body: 'My GCash pack has not arrived.' } },
+          { id: 'gc-bot', type: 'action', label: 'Agent reply', description: 'Agent, not a person. Recognizes the missing pack.', channel: 'help', message: { speaker: 'agent', badge: 'Agent', title: 'Agent', body: 'Hi Maria! I see your GCash payment of 200 PHP was confirmed at 4:17 PM. Bingo cards usually arrive within 5-10 minutes. If you still don\'t see them, I\'ll connect you to a live agent right away.' } },
+          { id: 'gc-condition', type: 'condition', label: 'Pack arrived?', description: 'Decision node', conditionLabel: 'Arrived?' },
+          { id: 'gc-yes', type: 'tag', label: 'Pack arrived', description: 'Nothing else to send.', branchType: 'yes' },
+          { id: 'gc-end', type: 'end', label: 'End', description: 'Leave the journey.', branchType: 'yes' },
+          { id: 'gc-still', type: 'action', label: 'Still nothing', description: 'Player says the pack is still missing', channel: 'help', branchType: 'no', message: { speaker: 'user', badge: 'Player', title: 'Maria', body: 'Still nothing' } },
+          { id: 'gc-handoff', type: 'action', label: 'Transfer to human', description: 'Agent session ends. A person joins.', channel: 'help', branchType: 'no', message: { speaker: 'handoff', badge: 'Handoff', title: 'Transferring to a live agent', body: 'Agent has left this chat. A person is taking over.' } },
+          { id: 'gc-agent', type: 'action', label: 'Human credits the pack', description: 'Live person, not the Agent. Releases the pack and a ₱50 voucher.', channel: 'help', branchType: 'no', message: { speaker: 'human', badge: 'Human', title: 'Live agent', body: 'I\'m taking this from here. GCash order GC48291736 for ₱200 is confirmed, and the pack never landed. I have released the card pack to your wallet, plus a ₱50 card voucher for the wait.' } },
+          { id: 'gc-email', type: 'action', label: 'Follow-up email', description: 'Session closed, confirm the pack and voucher', channel: 'email', branchType: 'no', message: { subject: 'Your card pack is in, with a ₱50 voucher', title: 'The pack has been released', body: 'Maria,\n\nThe ₱200 GCash pack is now on the account.\n\nA ₱50 card voucher covers the wait.', preview: 'The pack is on the account, with a ₱50 voucher.' } },
+        ],
+      },
+    ];
+
+    const scenariosZh = [
+      {
+        id: 'recall',
+        name: '5 日未活跃 → 召回',
+        icon: 'Clock',
+        color: 'purple',
+        bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
+        borderColor: 'border-[#5A69E0]',
+        userSegment: '5 日未登录 · 75 球未中奖',
+        description: '先发 App Push。24 小时未点击，再发邮件和最后一条 Web Push。',
+        steps: [
+          { id: 'rc-trigger', type: 'trigger', label: '5 日未活跃', description: '触发：5 日未登录，近 7 日 75 球未中奖' },
+          { id: 'rc-tag', type: 'tag', label: '打上召回标签', description: '标记「5 日流失，75 球未中奖」' },
+          { id: 'rc-push', type: 'action', label: 'App Push', description: 'Lucky Bingo，₱500，24 小时有效', channel: 'app_push', message: { title: 'Lucky Bingo', body: '₱500 in comeback cards is on your seat for 24 hours.' } },
+          { id: 'rc-delay', type: 'delay', label: '等待 24 小时', description: '看推送有没有被打开' },
+          { id: 'rc-condition', type: 'condition', label: '是否点击推送？', description: '决策节点', conditionLabel: '已点击？' },
+          { id: 'rc-yes', type: 'tag', label: '已回流', description: '玩家打开了推送，旅程结束。', branchType: 'yes' },
+          { id: 'rc-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
+          { id: 'rc-email', type: 'action', label: '召回邮件', description: '座位和 ₱500 还在', channel: 'email', branchType: 'no', message: { subject: 'Your ₱500 comeback cards expire tonight', title: 'Lucky Express kept your seat', body: 'Maria,\n\nLucky Express kept your seat. ₱500 in comeback cards stays on the account for 24 hours.\n\nJoin the next 75-ball round before they expire.', preview: '₱500 in comeback cards stays on the account for 24 hours.' } },
+          { id: 'rc-web', type: 'action', label: 'Web Push', description: '回访卡到期前的最后提醒', channel: 'web_push', branchType: 'no', message: { title: 'Last chance at Lucky Express', body: 'The ₱500 comeback cards expire in a few hours. Open the hall to use them.' } },
+        ],
+      },
+      {
+        id: 'jackpot',
+        name: '大厅停留 → Jackpot',
+        icon: 'Crown',
+        color: 'purple',
+        bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
+        borderColor: 'border-[#5A69E0]',
+        userSegment: '在大厅 · Mega Jackpot 进行中',
+        description: '对还没买卡的玩家发提醒，完赛后再发战绩邮件。',
+        steps: [
+          { id: 'jk-trigger', type: 'trigger', label: '进入大厅', description: '触发：周末 Mega Jackpot 开放，奖池 ₱500,000' },
+          { id: 'jk-delay', type: 'delay', label: '停留 15 分钟', description: '人还在大厅，没有买卡' },
+          { id: 'jk-condition', type: 'condition', label: '是否已买卡？', description: '决策节点', conditionLabel: '已买卡？' },
+          { id: 'jk-yes', type: 'tag', label: '已经报名', description: '跳过提醒。', branchType: 'yes' },
+          { id: 'jk-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
+          { id: 'jk-push', type: 'action', label: 'App Push', description: '买 6 张送 2 张', channel: 'app_push', branchType: 'no', message: { title: 'Mega Jackpot', body: 'Buy 6 cards, get 2 free. The draw starts in 15 minutes.' } },
+          { id: 'jk-result', type: 'tag', label: '本局结束', description: '214 人中排第 18，图案进度 3/5。', branchType: 'no' },
+          { id: 'jk-email', type: 'action', label: '完赛邮件', description: '名次、图案、下一场、早鸟券', channel: 'email', branchType: 'no', message: { subject: '18th of 214, next pool is Sunday', title: 'Your Mega Jackpot recap', body: 'You placed 18th of 214.\n\nPattern progress is 3 of 5.\n\nThe next ₱500,000 jackpot opens Sunday. An early-bird coupon is on this seat.', preview: 'Pattern progress is 3 of 5. Next pool opens Sunday.' } },
+        ],
+      },
+      {
+        id: 'gcash',
+        name: 'GCash 已扣 → 卡包未到',
+        icon: 'MessageCircle',
+        color: 'purple',
+        bgGradient: 'from-[#5A69E0] to-[#3D4DB7]',
+        borderColor: 'border-[#5A69E0]',
+        userSegment: '已付 ₱200 · 卡包未入账',
+        description: 'Still nothing 之前由 Agent 回复。玩家说完后转接人工，再由人工补发。',
+        steps: [
+          { id: 'gc-trigger', type: 'trigger', label: 'GCash 已确认', description: '触发：₱200 已扣，卡包仍是 0' },
+          { id: 'gc-tag', type: 'tag', label: '标记未到账', description: '订单 GC48291736，已付款未入账' },
+          { id: 'gc-open', type: 'action', label: '玩家打开 Help', description: '询问卡包为什么没到', channel: 'help', message: { speaker: 'user', badge: '用户', title: 'Maria', body: 'My GCash pack has not arrived.' } },
+          { id: 'gc-bot', type: 'action', label: 'Agent 回复', description: '这是 Agent，不是人工。识别为卡包未到账。', channel: 'help', message: { speaker: 'agent', badge: 'Agent', title: 'Agent', body: 'Hi Maria! I see your GCash payment of 200 PHP was confirmed at 4:17 PM. Bingo cards usually arrive within 5-10 minutes. If you still don\'t see them, I\'ll connect you to a live agent right away.' } },
+          { id: 'gc-condition', type: 'condition', label: '卡包到了吗？', description: '决策节点', conditionLabel: '已到账？' },
+          { id: 'gc-yes', type: 'tag', label: '卡包已到', description: '不再继续触达。', branchType: 'yes' },
+          { id: 'gc-end', type: 'end', label: '结束', description: '退出旅程。', branchType: 'yes' },
+          { id: 'gc-still', type: 'action', label: 'Still nothing', description: '玩家回复 Still nothing', channel: 'help', branchType: 'no', message: { speaker: 'user', badge: '用户', title: 'Maria', body: 'Still nothing' } },
+          { id: 'gc-handoff', type: 'action', label: '转接人工', description: 'Agent 会话结束，接入人工坐席。', channel: 'help', branchType: 'no', message: { speaker: 'handoff', badge: '转接', title: '正在转接人工', body: 'Agent 已退出。人工坐席正在接入。' } },
+          { id: 'gc-agent', type: 'action', label: '人工补发卡包', description: '人工坐席，不是 Agent。补发卡包和 ₱50 券。', channel: 'help', branchType: 'no', message: { speaker: 'human', badge: '人工', title: '人工坐席', body: 'I\'m taking this from here. GCash order GC48291736 for ₱200 is confirmed, and the pack never landed. I have released the card pack to your wallet, plus a ₱50 card voucher for the wait.' } },
+          { id: 'gc-email', type: 'action', label: '回访邮件', description: '会话结束，确认卡包和券', channel: 'email', branchType: 'no', message: { subject: 'Your card pack is in, with a ₱50 voucher', title: 'The pack has been released', body: 'Maria,\n\nThe ₱200 GCash pack is now on the account.\n\nA ₱50 card voucher covers the wait.', preview: 'The pack is on the account, with a ₱50 voucher.' } },
+        ],
+      },
+    ];
+
+    const UIS = {
+      en:{yes:'→ Yes',no:'→ No',noFurther:'No further steps',browserNotif:'Browser Notification',appNotif:'App Notification',replyT:'Reply T to unsubscribe',subtitle:'Swerte Hall Lifecycle Demo',systemRunning:'System Running',liveDemo:'Live Demo',selectScenario:'Select Automation Scenario',engineTitle:'EngageLab MA Automation Workflow Engine',engineSub:'Automation Workflow Visualization',executing:'Executing...',completed:'Completed',emptyTitle:'Click a scenario card above to start the demo',emptyBody:'Click a scenario card to play a Swerte Hall journey',streamTitle:'Channel Message Stream',streamSub:'Real-time reach records',msgUnit:'messages',noMsgTitle:'No messages yet',noMsgBody:'Triggered channel messages will be displayed here after the workflow executes',legendEmail:'Email',legendPush:'Push',engineRunning:'MA Engine Running',footer:'EngageLab Marketing Automation · Swerte Hall'},
+      cn:{yes:'→ 是',no:'→ 否',noFurther:'无后续步骤',browserNotif:'浏览器通知',appNotif:'应用通知',replyT:'退订回T',subtitle:'Swerte Hall 旅程演示',systemRunning:'系统运行中',liveDemo:'实时演示',selectScenario:'选择自动化场景',engineTitle:'EngageLab MA 自动化工作流引擎',engineSub:'自动化工作流可视化',executing:'执行中...',completed:'已完成',emptyTitle:'点击上方场景卡片开始演示',emptyBody:'点击场景卡片，播放 Swerte Hall 的自动化旅程',streamTitle:'渠道消息流',streamSub:'实时触达记录',msgUnit:'条消息',noMsgTitle:'暂无消息',noMsgBody:'工作流执行后，触发的渠道消息将在这里显示',legendEmail:'邮件',legendPush:'推送',engineRunning:'MA 引擎运行中',footer:'EngageLab 营销自动化 · Swerte Hall'}
+    };
+
+    // ============ Channel Config ============
+    const channelIcons = {
+      email: () => <Icons.Mail />,
+      whatsapp: () => <Icons.MessageCircle />,
+      sms: () => <Icons.Smartphone />,
+      app_push: () => <Icons.Bell />,
+      web_push: () => <Icons.Globe />,
+      help: () => <Icons.MessageCircle />,
+    };
+
+    const channelColors = {
+      email: { bg: 'bg-[#5A69E0]/10', border: 'border-[#5A69E0]/30', icon: 'text-[#5A69E0]', bubble: 'bg-[#5A69E0]' },
+      whatsapp: { bg: 'bg-[#25D366]/10', border: 'border-[#25D366]/30', icon: 'text-[#25D366]', bubble: 'bg-[#25D366]' },
+      sms: { bg: 'bg-gray-100', border: 'border-gray-300', icon: 'text-gray-600', bubble: 'bg-gray-500' },
+      app_push: { bg: 'bg-[#5A69E0]/10', border: 'border-[#5A69E0]/30', icon: 'text-[#5A69E0]', bubble: 'bg-[#5A69E0]' },
+      web_push: { bg: 'bg-[#5A69E0]/10', border: 'border-[#5A69E0]/30', icon: 'text-[#5A69E0]', bubble: 'bg-[#5A69E0]' },
+      help: { bg: 'bg-[#5A69E0]/10', border: 'border-[#5A69E0]/30', icon: 'text-[#5A69E0]', bubble: 'bg-[#5A69E0]' },
+    };
+
+    const channelNameSets = {
+      en: { email:'Email', whatsapp:'WhatsApp', sms:'SMS', app_push:'App Push', web_push:'Web Push', help:'Help' },
+      cn: { email:'邮件', whatsapp:'WhatsApp', sms:'SMS', app_push:'App Push', web_push:'Web Push', help:'Help' },
+    };
+
+    // ============ Workflow Node Component ============
+    const WorkflowNode = ({ step, isActive, isCompleted, isPending, index, boxed }) => {
+      const getNodeStyle = () => {
+        if (isCompleted) return 'bg-[#CEFB62] text-[#394551] border-[#CEFB62]';
+        if (isActive) return 'bg-gradient-to-r from-[#5A69E0] to-[#3D4DB7] text-white border-[#5A69E0] shadow-lg shadow-[#5A69E0]/50 scale-105';
+        return 'bg-white text-[#394551] border-gray-200 hover:border-[#5A69E0]/50';
+      };
+
+      const getIconForStep = () => {
+        const iconClass = isActive ? 'text-white' : isCompleted ? 'text-[#394551]' : 'text-[#5A69E0]';
+        switch (step.type) {
+          case 'trigger': return <span className={iconClass}><Icons.Zap /></span>;
+          case 'tag': return <span className={iconClass}><Icons.Tag /></span>;
+          case 'condition': return <span className={iconClass}><Icons.Users /></span>;
+          case 'delay': return <span className={iconClass}><Icons.Timer /></span>;
+          default:
+            if (step.channel && channelIcons[step.channel]) {
+              const IconComp = channelIcons[step.channel];
+              return <span className={isActive ? 'text-white' : isCompleted ? 'text-[#394551]' : channelColors[step.channel].icon}><IconComp /></span>;
+            }
+            return <span className={iconClass}><Icons.Send /></span>;
+        }
+      };
+
+      if (step.type === 'end') {
+        return (
+          <div style={{ animationDelay: `${index * 0.1}s` }} className="flex flex-col items-center animate-slide-up">
+            <div className={`rounded-full px-6 py-2 border-2 text-sm font-semibold ${getNodeStyle()}`}>{step.label}</div>
+          </div>
+        );
+      }
+
+      const isConditionNode = step.type === 'condition';
+
+      return (
+        <div style={{ animationDelay: `${index * 0.1}s` }} className={`flex flex-col items-center gap-2 animate-slide-up ${boxed ? 'w-full' : ''}`}>
+          <div className={`${isConditionNode ? 'rounded-xl w-16 h-16 flex items-center justify-center rotate-45' : `rounded-xl px-4 py-3 ${boxed ? 'w-full max-w-[220px]' : 'min-w-[180px]'} flex items-center gap-3`} ${getNodeStyle()} border-2 transition-all duration-300 shadow-md`}>
+            {isConditionNode ? (
+              <span className="-rotate-45 flex flex-col items-center"><Icons.Users /></span>
+            ) : (
+              <>
+                {getIconForStep()}
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="font-semibold text-sm truncate">{step.label}</span>
+                  <span className={`text-xs truncate ${isActive ? 'text-white/80' : isCompleted ? 'text-[#394551]/70' : 'text-gray-500'}`}>{step.description}</span>
+                </div>
+              </>
+            )}
+          </div>
+          {step.type === 'condition' && step.conditionLabel && (
+            <div className={`text-xs font-medium px-3 py-1 rounded-full mt-1 ${isActive || isCompleted ? 'bg-[#CEFB62]/20 text-[#394551]' : 'bg-gray-100 text-gray-600'}`}>
+              {step.conditionLabel}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ============ Connector Components ============
+    const Connector = ({ isActive, isCompleted }) => (
+      <div className="flex items-center gap-2">
+        <div className={`h-0.5 w-12 ${isCompleted || isActive ? 'bg-[#CEFB62]' : 'bg-gray-300'}`} />
+        <span className={isCompleted || isActive ? 'text-[#CEFB62]' : 'text-gray-400'}><Icons.ArrowRight /></span>
+      </div>
+    );
+
+    const VerticalConnector = ({ isActive, isCompleted }) => (
+      <div className={`h-8 w-0.5 ${isCompleted ? 'bg-[#CEFB62]' : isActive ? 'bg-[#5A69E0]' : 'bg-gray-300'}`} />
+    );
+
+    // ============ Branch Section Component ============
+    const BranchSection = ({ conditionStep, yesSteps, noSteps, currentStepIndex, steps, onRenderStep, ui }) => {
+      const conditionIndex = steps.findIndex(s => s.id === conditionStep.id);
+      const yesIndices = yesSteps.map(s => steps.findIndex(s2 => s2.id === s.id));
+      const noIndices = noSteps.map(s => steps.findIndex(s2 => s2.id === s.id));
+      
+      const conditionState = currentStepIndex > conditionIndex
+        ? { isActive: false, isCompleted: true, isPending: false }
+        : currentStepIndex === conditionIndex
+        ? { isActive: true, isCompleted: false, isPending: false }
+        : { isActive: false, isCompleted: false, isPending: true };
+
+      const getBranchStepState = (stepIndex) => {
+        if (currentStepIndex > stepIndex) return { isActive: false, isCompleted: true, isPending: false };
+        if (currentStepIndex === stepIndex) return { isActive: true, isCompleted: false, isPending: false };
+        if (currentStepIndex <= conditionIndex) return { isActive: false, isCompleted: false, isPending: true };
+        return { isActive: false, isCompleted: false, isPending: true };
+      };
+
+      const col = 240;
+      const gap = 72;
+      const width = col * 2 + gap;
+      const forkClass = conditionState.isCompleted ? 'bg-[#CEFB62]' : conditionState.isActive ? 'bg-[#5A69E0]' : 'bg-gray-300';
+
+      const branchDone = (branchSteps) => {
+        if (!branchSteps.length) return conditionState.isCompleted;
+        const last = branchSteps[branchSteps.length - 1];
+        return getBranchStepState(steps.findIndex(s => s.id === last.id)).isCompleted;
+      };
+      const yesDone = branchDone(yesSteps);
+      const noDone = branchDone(noSteps);
+      const yesExits = yesSteps.some(step => step.type === 'end');
+      const noExits = noSteps.some(step => step.type === 'end');
+      const showMerge = !yesExits && !noExits;
+      const mergeClass = yesDone && noDone ? 'bg-[#CEFB62]' : 'bg-gray-300';
+
+      const renderBranchColumn = (branchSteps, side) => {
+        const isYes = side === 'yes';
+        const done = isYes ? yesDone : noDone;
+        const tailClass = done ? 'bg-[#CEFB62]' : 'bg-gray-300';
+        const pillClass = isYes
+          ? (conditionState.isCompleted ? 'bg-[#5A69E0] text-white' : conditionState.isActive ? 'bg-[#5A69E0]/20 text-[#5A69E0]' : 'bg-gray-100 text-gray-500')
+          : (conditionState.isCompleted ? 'bg-gray-500 text-white' : conditionState.isActive ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-500');
+        return (
+          <div key={side} className="flex flex-col items-center" style={{ width: col }}>
+            <div className={`h-4 w-0.5 ${forkClass}`} />
+            <div className={`text-xs font-medium px-3 py-1 rounded-full ${pillClass}`}>{isYes ? ui.yes : ui.no}</div>
+            <div className={`h-4 w-0.5 ${forkClass}`} />
+            {branchSteps.length > 0 ? (
+              <div className="flex w-full flex-col items-center">
+                {branchSteps.map((step, idx) => {
+                  const stepIndex = steps.findIndex(s => s.id === step.id);
+                  const state = getBranchStepState(stepIndex);
+                  return (
+                    <React.Fragment key={step.id}>
+                      <WorkflowNode
+                        step={step}
+                        isActive={state.isActive}
+                        isCompleted={state.isCompleted}
+                        isPending={state.isPending}
+                        index={stepIndex}
+                        boxed
+                      />
+                      {idx < branchSteps.length - 1 && (
+                        <div className={`h-8 w-0.5 ${state.isCompleted ? 'bg-[#CEFB62]' : 'bg-gray-300'}`} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={`text-xs px-3 py-2 rounded-lg border ${conditionState.isCompleted ? 'border-[#CEFB62] bg-[#CEFB62]/10 text-gray-600' : 'border-gray-200 bg-gray-50 text-gray-400'}`}>
+                {ui.noFurther}
+              </div>
+            )}
+            {showMerge && <div className={`w-0.5 flex-1 ${tailClass}`} style={{ minHeight: 24 }} />}
+          </div>
+        );
+      };
+
+      return (
+        <div className="flex flex-col items-center">
+          <WorkflowNode
+            step={conditionStep}
+            isActive={conditionState.isActive}
+            isCompleted={conditionState.isCompleted}
+            isPending={conditionState.isPending}
+            index={conditionIndex}
+          />
+
+          <div className={`h-5 w-0.5 ${forkClass}`} />
+
+          <div style={{ width }}>
+            <div className="relative">
+              <div className={`absolute top-0 h-0.5 ${forkClass}`} style={{ left: col / 2, width: col + gap }} />
+              <div className="flex items-stretch" style={{ gap }}>
+                {renderBranchColumn(yesSteps, 'yes')}
+                {renderBranchColumn(noSteps, 'no')}
+              </div>
+            </div>
+            {showMerge && (
+              <div className="relative h-0.5">
+                <div className={`absolute top-0 h-0.5 ${mergeClass}`} style={{ left: col / 2, width: col + gap }} />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // ============ Parse Steps ============
+    const parseStepsToSections = (steps) => {
+      const sections = [];
+      let i = 0;
+      
+      while (i < steps.length) {
+        const step = steps[i];
+        
+        if (step.type === 'condition') {
+          const yesBranch = [];
+          const noBranch = [];
+          i++;
+          
+          while (i < steps.length && steps[i].branchType === 'yes') {
+            yesBranch.push(steps[i]);
+            i++;
+          }
+          
+          while (i < steps.length && steps[i].branchType === 'no') {
+            noBranch.push(steps[i]);
+            i++;
+          }
+          
+          sections.push({ 
+            type: 'branch', 
+            condition: step, 
+            yesBranch, 
+            noBranch 
+          });
+        } else {
+          sections.push({ type: 'linear', step });
+          i++;
+        }
+      }
+      
+      return sections;
+    };
+
+    // ============ Message Card Component ============
+    const MessageCard = ({ message, index, lang, ui }) => {
+      const colors = channelColors[message.channel];
+      const IconComp = channelIcons[message.channel];
+      const name = channelNameSets[lang][message.channel];
+
+      const formatTime = (date) => {
+        return date.toLocaleTimeString(lang === 'cn' ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      };
+
+      if (message.channel === 'email') {
+        return (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div className="bg-gradient-to-r from-[#5A69E0] to-[#3D4DB7] px-4 py-3">
+              <div className="flex items-center gap-2 text-white">
+                <IconComp />
+                <span className="font-semibold text-sm">{name}</span>
+                <span className="ml-auto text-xs opacity-80">{formatTime(message.timestamp)}</span>
+              </div>
+            </div>
+            <div className="p-4">
+              <h4 className="font-semibold text-[#394551] mb-2">{message.content.subject}</h4>
+              <p className="text-sm text-gray-600 mb-3 leading-relaxed whitespace-pre-line">
+                {message.content.body.split('\n').slice(0, 3).join('\n')}
+              </p>
+              {message.content.preview && (
+                <div className="bg-gray-50 rounded-lg p-3 border-l-4 border-[#5A69E0]">
+                  <p className="text-xs text-gray-500 italic">{message.content.preview}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      if (message.channel === 'help') {
+        const speaker = message.content.speaker || 'agent';
+        if (speaker === 'handoff') {
+          return (
+            <div className="animate-slide-in py-1" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-[#394551]/25" />
+                <div className="rounded-full bg-[#394551] px-3 py-1 text-xs font-semibold text-[#CEFB62]">{message.content.title}</div>
+                <div className="h-px flex-1 bg-[#394551]/25" />
+              </div>
+              <p className="mt-2 text-center text-xs text-[#394551]">{message.content.body}</p>
+            </div>
+          );
+        }
+        const isUser = speaker === 'user';
+        const isHuman = speaker === 'human';
+        const badgeClass = isHuman
+          ? 'bg-[#394551] text-[#CEFB62]'
+          : isUser
+            ? 'bg-white text-[#394551] border border-gray-300'
+            : 'bg-[#5A69E0] text-white';
+        const cardClass = isHuman
+          ? 'bg-[#CEFB62]/25 border border-[#394551]/15'
+          : isUser
+            ? 'bg-white border border-gray-200'
+            : 'bg-[#EEF0FD] border border-[#5A69E0]/20';
+        return (
+          <div className={`${cardClass} rounded-xl p-4 shadow-lg animate-slide-in`} style={{ animationDelay: `${index * 0.1}s` }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`${badgeClass} rounded-full px-2 py-0.5 text-[11px] font-semibold`}>{message.content.badge || 'Agent'}</span>
+              <span className="font-semibold text-sm text-[#394551]">{message.content.title || name}</span>
+              <span className="ml-auto text-xs text-gray-500">{formatTime(message.timestamp)}</span>
+            </div>
+            <div className={`${isUser ? 'bg-gray-50' : 'bg-white'} rounded-lg p-3 shadow-sm`}>
+              <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{message.content.body}</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (message.channel === 'whatsapp') {
+        return (
+          <div className="bg-[#ECE5DD] rounded-xl p-4 shadow-lg animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`${colors.bg} p-1.5 rounded-full`}>
+                <span className={colors.icon}><IconComp /></span>
+              </div>
+              <span className="font-semibold text-sm text-gray-800">{name}</span>
+              <span className="ml-auto text-xs text-gray-500">{formatTime(message.timestamp)}</span>
+            </div>
+            <div className="bg-white rounded-lg rounded-tl-none p-3 shadow-sm">
+              <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{message.content.body}</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (message.channel === 'app_push' || message.channel === 'web_push') {
+        const isWeb = message.channel === 'web_push';
+        return (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div className="bg-[#394551] px-4 py-2 flex items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+              </div>
+              <span className="text-xs text-gray-400 ml-2">{isWeb ? ui.browserNotif : ui.appNotif}</span>
+            </div>
+            <div className="p-3 flex items-start gap-3">
+              <div className={`${colors.bg} p-2 rounded-lg`}>
+                <span className={colors.icon}><IconComp /></span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-sm text-[#394551]">{message.content.title}</span>
+                  <span className="text-xs text-gray-400">{formatTime(message.timestamp)}</span>
+                </div>
+                <p className="text-sm text-gray-600 truncate">{message.content.body}</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className={`${colors.bg} p-1.5 rounded-full`}>
+              <span className={colors.icon}><IconComp /></span>
+            </div>
+            <span className="font-semibold text-sm text-gray-800">{name}</span>
+            <span className="ml-auto text-xs text-gray-500">{formatTime(message.timestamp)}</span>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed mb-3 whitespace-pre-line">{message.content.body}</p>
+          <p className="text-xs text-gray-400 italic">{ui.replyT}</p>
+        </div>
+      );
+    };
+
+    // ============ Scenario Card Component ============
+    const ScenarioCard = ({ scenario, isActive, isPlaying, onClick }) => {
+      const IconComp = Icons[scenario.icon] || Icons.Zap;
+      return (
+        <button
+          onClick={onClick}
+          className={`
+            relative overflow-hidden rounded-xl p-4 text-left transition-all duration-300 cursor-pointer hover:-translate-y-0.5
+            ${isActive
+              ? `bg-gradient-to-br ${scenario.bgGradient} text-white shadow-xl ring-2 ring-white/30`
+              : 'bg-white shadow-sm border border-gray-200 text-[#394551] hover:border-[#5A69E0]/50'
+            }
+          `}
+        >
+          <div className={`w-10 h-10 rounded-lg mb-3 flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-[#5A69E0]/10'}`}>
+            <span className={isActive ? 'text-white' : 'text-[#5A69E0]'}><IconComp /></span>
+          </div>
+          <h3 className="font-semibold text-sm mb-1">{scenario.name}</h3>
+          <p className={`text-xs ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+            {scenario.userSegment}
+          </p>
+        </button>
+      );
+    };
+
+    // ============ Main Component ============
+    const deskTime = (date, isCn) => date.toLocaleTimeString(isCn ? 'zh-CN' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const LiveDeskDesk = ({ messages, isCn }) => {
+      const scroller = useRef(null);
+      const chat = messages.filter(message => message.channel === 'help' || message.channel === 'email');
+      const handed = chat.some(message => message.channel === 'help' && (message.content.speaker === 'handoff' || message.content.speaker === 'human'));
+      const last = [...chat].reverse().find(message => message.channel === 'help' && message.content.speaker !== 'handoff');
+      const preview = last ? last.content.body : (isCn ? '等待玩家从右侧发起' : 'Waiting for the player');
+
+      useEffect(() => {
+        if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
+      }, [messages]);
+
+      const folders = [
+        { label: isCn ? '所有' : 'All', count: 1, active: false },
+        { label: isCn ? '未分配' : 'Unassigned', count: 0, active: false },
+        { label: isCn ? 'AI 值班' : 'AI on duty', count: handed ? 0 : 1, active: !handed },
+        { label: isCn ? '我的' : 'Mine', count: handed ? 1 : 0, active: handed },
+      ];
+
+      return (
+        <div className="flex flex-1 min-h-0 bg-white">
+          <aside className="w-[196px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
+            <div className="px-3 py-3 border-b border-gray-100">
+              <div className="text-sm font-semibold text-[#394551]">Swerte Hall</div>
+              <div className="text-[11px] text-gray-400">{isCn ? '对话' : 'Conversations'}</div>
+            </div>
+            <div className="px-2 py-2 space-y-0.5">
+              {folders.map(folder => (
+                <div key={folder.label} className={`flex items-center justify-between rounded-md px-2 py-1.5 text-xs ${folder.active ? 'bg-[#EEF0FD] text-[#5A69E0] font-semibold' : 'text-[#394551]'}`}>
+                  <span>{folder.label}</span>
+                  <span className="text-[11px] text-gray-400">{folder.count}</span>
+                </div>
+              ))}
+            </div>
+            <div className="px-3 pt-3 pb-1 text-[11px] font-semibold text-gray-400">{isCn ? '收件箱' : 'Inboxes'}</div>
+            <div className="px-2">
+              <div className="rounded-md bg-[#EEF0FD] px-2 py-1.5 text-xs font-semibold text-[#5A69E0]">Swerte Hall Web</div>
+            </div>
+            <div className="mt-3 mx-2 rounded-lg border border-[#5A69E0]/20 bg-[#EEF0FD]/60 p-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-[#5A69E0] text-white text-[10px] font-semibold flex items-center justify-center">MS</div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-[#394551] truncate">Maria Santos</div>
+                  <div className="text-[10px] text-gray-500 truncate">{preview}</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+          <section className="flex-1 min-w-0 flex flex-col bg-[#f7f8fb]">
+            <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#5A69E0] text-white text-xs font-semibold flex items-center justify-center">MS</div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-[#394551]">Maria Santos</div>
+                <div className="text-[11px] text-gray-500 truncate">Swerte Hall Web · ID 482917360001</div>
+              </div>
+              <div className={`ml-auto rounded-full px-2.5 py-1 text-[11px] font-semibold ${handed ? 'bg-[#394551] text-[#CEFB62]' : 'bg-[#e7f8ef] text-[#1f7a56]'}`}>
+                {handed ? (isCn ? '人工' : 'Human') : (isCn ? 'AI 响应' : 'AI reply')}
+              </div>
+            </div>
+            <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              {chat.length === 0 ? (
+                <p className="text-center text-xs text-gray-400 pt-8">{isCn ? '等待玩家从右侧发起对话' : 'Waiting for the player to start on the right'}</p>
+              ) : (
+                <p className="text-center text-[11px] text-gray-400">{isCn ? '由自动化分配给 Agent' : 'Assigned to Agent by automation'}</p>
+              )}
+              {chat.map(message => {
+                if (message.channel === 'email') {
+                  return <p key={message.id} className="text-center text-[11px] text-gray-400">{isCn ? '会话结束，回访邮件已发送' : 'Session closed. Follow-up email sent.'}</p>;
+                }
+                const speaker = message.content.speaker || 'agent';
+                if (speaker === 'handoff') {
+                  return (
+                    <div key={message.id} className="text-center">
+                      <span className="inline-block rounded-full bg-[#394551] px-3 py-1 text-[11px] font-semibold text-[#CEFB62]">{message.content.title}</span>
+                      <p className="mt-1 text-[11px] text-gray-500">{message.content.body}</p>
+                    </div>
+                  );
+                }
+                const isUser = speaker === 'user';
+                const isHuman = speaker === 'human';
+                const label = isUser ? 'Maria' : isHuman ? (isCn ? '人工坐席' : 'Live agent') : 'Agent';
+                return (
+                  <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
+                    <div className={`max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${isUser ? 'bg-white text-[#394551]' : isHuman ? 'bg-white border border-[#394551]/15 text-[#394551]' : 'bg-[#EEF0FD] text-[#394551]'}`}>
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${isHuman ? 'bg-[#394551] text-[#CEFB62]' : isUser ? 'bg-gray-100 text-[#394551]' : 'bg-[#5A69E0] text-white'}`}>{message.content.badge || label}</span>
+                        <span className="text-[10px] text-gray-400">{deskTime(message.timestamp, isCn)}</span>
+                      </div>
+                      <p className="text-sm leading-relaxed whitespace-pre-line">{message.content.body}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="bg-white border-t border-gray-200 px-4 py-3">
+              <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-[#f7f8fb] px-3 py-2">
+                <span className="flex-1 text-sm text-gray-400">{handed ? (isCn ? '以人工坐席身份回复' : 'Reply as the live agent') : (isCn ? 'Agent 正在回复' : 'Agent is replying')}</span>
+                <span className="rounded-full bg-[#5A69E0] px-3 py-1 text-xs font-semibold text-white">{isCn ? '发送' : 'Send'}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    const PlayerEntryChat = ({ messages, isCn }) => {
+      const scroller = useRef(null);
+      const chat = messages.filter(message => message.channel === 'help' || message.channel === 'email');
+      useEffect(() => {
+        if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
+      }, [messages]);
+
+      return (
+        <div className="flex flex-1 min-h-0 flex-col bg-white">
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#1f7a56] text-white text-xs font-semibold flex items-center justify-center">H</div>
+            <div>
+              <h2 className="text-sm font-semibold text-[#394551]">Help · Swerte Hall</h2>
+              <p className="text-[11px] text-gray-500">{isCn ? '玩家入口' : 'Player entry'}</p>
+            </div>
+          </div>
+          <div ref={scroller} className="flex-1 overflow-y-auto bg-[#f7f8fb] px-4 py-4 space-y-3">
+            {chat.length === 0 ? (
+              <p className="text-center text-xs text-gray-400 pt-10">{isCn ? '玩家在这里发起对话' : 'The player starts the chat here'}</p>
+            ) : null}
+            {chat.map((message, index) => {
+              if (message.channel === 'email') {
+                return <MessageCard key={message.id} message={message} index={index} lang={isCn ? 'cn' : 'en'} ui={UIS[isCn ? 'cn' : 'en']} />;
+              }
+              const speaker = message.content.speaker || 'agent';
+              if (speaker === 'handoff') {
+                return (
+                  <div key={message.id} className="text-center">
+                    <span className="inline-block rounded-full bg-[#394551] px-3 py-1 text-[11px] font-semibold text-[#CEFB62]">{message.content.title}</span>
+                    <p className="mt-1 text-[11px] text-gray-500">{message.content.body}</p>
+                  </div>
+                );
+              }
+              const isUser = speaker === 'user';
+              const isHuman = speaker === 'human';
+              const label = isUser ? 'Maria' : isHuman ? (isCn ? '人工坐席' : 'Live agent') : 'Agent';
+              return (
+                <div key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm ${isUser ? 'bg-[#5A69E0] text-white' : isHuman ? 'bg-white border border-[#394551]/15 text-[#394551]' : 'bg-white text-[#394551]'}`}>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${isUser ? 'bg-white/20 text-white' : isHuman ? 'bg-[#394551] text-[#CEFB62]' : 'bg-[#5A69E0] text-white'}`}>{message.content.badge || label}</span>
+                      <span className={`text-[10px] ${isUser ? 'text-white/70' : 'text-gray-400'}`}>{deskTime(message.timestamp, isCn)}</span>
+                    </div>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{message.content.body}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-t border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-[#f7f8fb] px-3 py-2">
+              <span className="flex-1 text-sm text-gray-400">{isCn ? '输入消息' : 'Type a message'}</span>
+              <span className="rounded-full bg-[#5A69E0] px-3 py-1 text-xs font-semibold text-white">{isCn ? '发送' : 'Send'}</span>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const EngageLabMASimulator = () => {
+      const [lang, setLang] = useState('cn');
+      const isCn = lang === 'cn';
+      const locale = isCn ? 'zh-CN' : 'en-US';
+      const SCEN = isCn ? scenariosZh : scenariosEn;
+      const UI = UIS[lang];
+      const [activeScenarioId, setActiveScenarioId] = useState(null);
+      const [currentStepIndex, setCurrentStepIndex] = useState(-1);
+      const [messages, setMessages] = useState([]);
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [isCompleted, setIsCompleted] = useState(false);
+
+      const activeScenario = SCEN.find(s => s.id === activeScenarioId);
+
+      useEffect(() => {
+        document.documentElement.lang = isCn ? 'zh-CN' : 'en';
+        document.title = isCn ? 'EngageLab MA · Swerte Hall 旅程演示' : 'EngageLab MA · Swerte Hall Lifecycle Demo';
+        resetSimulation();
+      }, [lang]);
+
+      const resetSimulation = useCallback(() => {
+        setCurrentStepIndex(-1);
+        setMessages([]);
+        setIsPlaying(false);
+        setIsCompleted(false);
+      }, []);
+
+      const startScenario = useCallback((scenarioId) => {
+        resetSimulation();
+        setActiveScenarioId(scenarioId);
+        setIsPlaying(true);
+      }, [resetSimulation]);
+
+      useEffect(() => {
+        if (!isPlaying || !activeScenario) return;
+
+        if (currentStepIndex === -1) {
+          const timer = setTimeout(() => setCurrentStepIndex(0), 500);
+          return () => clearTimeout(timer);
+        }
+
+        if (currentStepIndex >= activeScenario.steps.length) {
+          setIsPlaying(false);
+          setIsCompleted(true);
+          return;
+        }
+
+        const currentStep = activeScenario.steps[currentStepIndex];
+
+        if (currentStep.branchType === 'no') {
+          const prevStep = currentStepIndex > 0 ? activeScenario.steps[currentStepIndex - 1] : null;
+          if (prevStep && (prevStep.type === 'condition' || prevStep.branchType === 'yes')) {
+            setMessages(prev => prev.filter(msg => {
+              return !activeScenario.steps.some(s => 
+                s.branchType === 'yes' && s.id === msg.stepId
+              );
+            }));
+          }
+        }
+
+        if (currentStep.channel && currentStep.message) {
+          const newMessage = {
+            id: `${currentStep.id}-${Date.now()}`,
+            channel: currentStep.channel,
+            content: currentStep.message,
+            timestamp: new Date(),
+            stepId: currentStep.id,
+          };
+          setMessages(prev => [...prev, newMessage]);
+        }
+
+        const timer = setTimeout(() => setCurrentStepIndex(prev => prev + 1), 1500);
+        return () => clearTimeout(timer);
+      }, [isPlaying, currentStepIndex, activeScenario]);
+
+      const getStepState = (index) => {
+        if (!activeScenario) return { isActive: false, isCompleted: false, isPending: true };
+        if (currentStepIndex > index) return { isActive: false, isCompleted: true, isPending: false };
+        if (currentStepIndex === index) return { isActive: true, isCompleted: false, isPending: false };
+        return { isActive: false, isCompleted: false, isPending: true };
+      };
+
+      const getSegmentBadgeColor = (color) => {
+        const colors = {
+          purple: 'bg-[#5A69E0]/10 text-[#5A69E0] border-[#5A69E0]/30',
+          emerald: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+          violet: 'bg-violet-500/10 text-violet-600 border-violet-500/30',
+          orange: 'bg-orange-500/10 text-orange-600 border-orange-500/30',
+          slate: 'bg-slate-500/10 text-slate-600 border-slate-500/30',
+          amber: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
+        };
+        return colors[color] || colors.purple;
+      };
+
+      const renderWorkflowContent = () => {
+        if (!activeScenario) return null;
+
+        const sections = parseStepsToSections(activeScenario.steps);
+        const steps = activeScenario.steps;
+
+        return (
+          <div className="flex flex-col items-center">
+            <div className="text-center mb-8">
+              <h3 className="text-[#394551] text-xl font-bold">{activeScenario.name}</h3>
+              <p className="text-gray-500 text-sm mt-1">{activeScenario.description}</p>
+              <div className={`inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full text-xs font-medium border ${getSegmentBadgeColor(activeScenario.color)}`}>
+                <Icons.Users />
+                {activeScenario.userSegment}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-0">
+              {sections.map((section, sectionIdx) => {
+                if (section.type === 'linear') {
+                  const stepIndex = steps.findIndex(s => s.id === section.step.id);
+                  const { isActive, isCompleted, isPending } = getStepState(stepIndex);
+                  
+                  return (
+                    <React.Fragment key={section.step.id}>
+                      {sectionIdx > 0 && (
+                        <VerticalConnector isActive={isActive} isCompleted={isCompleted} />
+                      )}
+                      <WorkflowNode
+                        step={section.step}
+                        isActive={isActive}
+                        isCompleted={isCompleted}
+                        isPending={isPending}
+                        index={stepIndex}
+                      />
+                    </React.Fragment>
+                  );
+                } else if (section.type === 'branch') {
+                  return (
+                    <React.Fragment key={section.condition.id}>
+                      {sectionIdx > 0 && (
+                        <VerticalConnector 
+                          isActive={getStepState(steps.findIndex(s => s.id === section.condition.id)).isActive} 
+                          isCompleted={getStepState(steps.findIndex(s => s.id === section.condition.id)).isCompleted} 
+                        />
+                      )}
+                      <BranchSection
+                        conditionStep={section.condition}
+                        yesSteps={section.yesBranch}
+                        noSteps={section.noBranch}
+                        currentStepIndex={currentStepIndex}
+                        steps={steps}
+                        ui={UI}
+                      />
+                    </React.Fragment>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-[#f8f9fc] via-[#eef0fd] to-[#f8f9fc] pb-12">
+          <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+            <div className="px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src="https://img.engagelab.net/en/article/engageLab-logo-compressed.webp" 
+                    alt="EngageLab Logo"
+                    onError={(e)=>{ e.target.style.display='none'; const d=document.getElementById('logo-fallback'); if(d)d.style.display='flex'; }}
+                    className="h-9 w-auto object-contain"
+                  />
+                  <div id="logo-fallback" style={{display:'none'}} className="h-9 px-3 rounded-lg bg-gradient-to-r from-[#5A69E0] to-[#3D4DB7] text-white font-bold text-sm items-center shadow-sm">EngageLab</div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-[#394551]">EngageLab MA</h1>
+                    <p className="text-sm text-[#5A69E0]">{UI.subtitle}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setLang(l => (l === 'en' ? 'cn' : 'en'))}
+                    className="flex items-center gap-1.5 rounded-full border border-[#5A69E0]/30 bg-white px-3 py-2 text-sm font-semibold text-[#5A69E0] hover:bg-[#5A69E0]/5 transition-colors shadow-sm"
+                    aria-label="Switch language"
+                  >
+                    <Icons.Globe />
+                    <span>{isCn ? 'EN' : '中文'}</span>
+                  </button>
+                  <div className="flex items-center gap-2 bg-[#CEFB62]/20 border border-[#CEFB62]/30 rounded-full px-4 py-2">
+                    <span className="w-2 h-2 bg-[#CEFB62] rounded-full animate-pulse" />
+                    <span className="text-[#394551] text-sm font-medium">{UI.systemRunning}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[#394551] font-medium">{new Date().toLocaleDateString(locale)}</p>
+                    <p className="text-gray-500 text-xs">{UI.liveDemo}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div className="px-8 py-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[#5A69E0]"><Icons.Users /></span>
+              <span className="text-[#394551] text-sm font-medium">{UI.selectScenario}</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {SCEN.map((scenario) => (
+                <ScenarioCard
+                  key={scenario.id}
+                  scenario={scenario}
+                  isActive={activeScenarioId === scenario.id}
+                  isPlaying={isPlaying}
+                  onClick={() => startScenario(scenario.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="px-8 pb-8" style={{ height: 'calc(100vh - 200px)' }}>
+            <div className="flex flex-col lg:flex-row gap-6 h-full">
+              <div className="flex-1 bg-white shadow-lg rounded-2xl border border-gray-200 overflow-hidden flex flex-col min-h-0">
+                {activeScenario && activeScenario.id === 'gcash' ? (
+                  <LiveDeskDesk messages={messages} isCn={isCn} />
+                ) : (
+                  <>
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5A69E0] to-[#3D4DB7] flex items-center justify-center">
+                      <span className="text-white"><Icons.TrendingUp /></span>
+                    </div>
+                    <div>
+                      <h2 className="text-[#394551] font-semibold">{UI.engineTitle}</h2>
+                      <p className="text-gray-500 text-xs">{UI.engineSub}</p>
+                    </div>
+                  </div>
+                  {activeScenario && (
+                    <div className="flex items-center gap-3">
+                      {isPlaying && (
+                        <div className="flex items-center gap-2 bg-[#5A69E0]/10 border border-[#5A69E0]/30 rounded-full px-3 py-1.5">
+                          <span className="text-[#5A69E0] animate-spin-custom"><Icons.RefreshCw /></span>
+                          <span className="text-[#5A69E0] text-xs">{UI.executing}</span>
+                        </div>
+                      )}
+                      {isCompleted && (
+                        <div className="flex items-center gap-2 bg-[#CEFB62]/20 border border-[#CEFB62]/30 rounded-full px-3 py-1.5">
+                          <span className="text-[#394551]"><Icons.Check /></span>
+                          <span className="text-[#394551] text-xs">{UI.completed}</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={resetSimulation}
+                        className="text-gray-400 hover:text-[#394551] transition-colors"
+                      >
+                        <Icons.RefreshCw />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-8 flex-1 overflow-y-auto scrollbar-hide">
+                  {!activeScenario ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center py-12">
+                      <div className="w-20 h-20 rounded-2xl bg-[#5A69E0]/5 flex items-center justify-center mb-4">
+                        <span className="text-gray-400"><Icons.Sparkles /></span>
+                      </div>
+                      <h3 className="text-[#394551] text-lg font-medium mb-2">{UI.emptyTitle}</h3>
+                      <p className="text-gray-500 text-sm max-w-md">
+                        {UI.emptyBody}
+                      </p>
+                    </div>
+                  ) : (
+                    renderWorkflowContent()
+                  )}
+                </div>
+                  </>
+                )}
+              </div>
+
+              <div className="w-full lg:w-[420px] bg-white shadow-lg rounded-2xl border border-gray-200 overflow-hidden flex flex-col flex-shrink-0 min-h-0" style={{ maxHeight: '100%' }}>
+                {activeScenario && activeScenario.id === 'gcash' ? (
+                  <PlayerEntryChat messages={messages} isCn={isCn} />
+                ) : (
+                  <>
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#CEFB62] to-[#a8d94a] flex items-center justify-center">
+                    <span className="text-[#394551]"><Icons.MessageCircle /></span>
+                  </div>
+                  <div>
+                    <h2 className="text-[#394551] font-semibold">{UI.streamTitle}</h2>
+                    <p className="text-gray-500 text-xs">{UI.streamSub}</p>
+                  </div>
+                  <div className="ml-auto">
+                    <span className="text-2xl font-bold text-[#394551]">{messages.length}</span>
+                    <span className="text-gray-500 text-xs ml-1">{UI.msgUnit}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 flex-1 overflow-y-auto scrollbar-hide space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center py-12">
+                      <div className="w-16 h-16 rounded-2xl bg-[#5A69E0]/5 flex items-center justify-center mb-4">
+                        <span className="text-gray-400"><Icons.Mail /></span>
+                      </div>
+                      <h3 className="text-[#394551] font-medium mb-2">{UI.noMsgTitle}</h3>
+                      <p className="text-gray-500 text-sm">
+                        {UI.noMsgBody}
+                      </p>
+                      <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icons.Mail />
+                          <span className="text-xs">{UI.legendEmail}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icons.MessageCircle />
+                          <span className="text-xs">WhatsApp</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icons.Smartphone />
+                          <span className="text-xs">SMS</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Icons.Bell />
+                          <span className="text-xs">{UI.legendPush}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((message, index) => (
+                      <MessageCard key={message.id} message={message} index={index} lang={lang} ui={UI} />
+                    ))
+                  )}
+                </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white shadow-sm border-t border-gray-200 px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#CEFB62]" />
+                  <span className="text-gray-500 text-xs">{UI.engineRunning}</span>
+                </div>
+                <div className="hidden md:flex items-center gap-4 text-xs text-gray-500">
+                  <span>{UI.legendEmail}</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-400" />
+                  <span>WhatsApp</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-400" />
+                  <span>SMS</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-400" />
+                  <span>App Push</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-400" />
+                  <span>Web Push</span>
+                </div>
+              </div>
+              <div className="text-gray-500 text-xs">
+                {UI.footer}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<EngageLabMASimulator />);
+  </script>
+
+
+</body></html>
