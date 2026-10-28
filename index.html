@@ -1047,20 +1047,22 @@
         <button
           onClick={onClick}
           className={`
-            relative overflow-hidden rounded-xl p-4 text-left transition-all duration-300 cursor-pointer hover:-translate-y-0.5
+            relative flex items-center gap-2.5 overflow-hidden rounded-xl px-3 py-2 text-left transition-all duration-300 cursor-pointer hover:-translate-y-0.5
             ${isActive
-              ? `bg-gradient-to-br ${scenario.bgGradient} text-white shadow-xl ring-2 ring-white/30`
+              ? `bg-gradient-to-br ${scenario.bgGradient} text-white shadow-md ring-2 ring-white/30`
               : 'bg-white shadow-sm border border-gray-200 text-[#394551] hover:border-[#5A69E0]/50'
             }
           `}
         >
-          <div className={`w-10 h-10 rounded-lg mb-3 flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-[#5A69E0]/10'}`}>
+          <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-[#5A69E0]/10'}`}>
             <span className={isActive ? 'text-white' : 'text-[#5A69E0]'}><IconComp /></span>
           </div>
-          <h3 className="font-semibold text-sm mb-1">{scenario.name}</h3>
-          <p className={`text-xs ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-            {scenario.userSegment}
-          </p>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm leading-snug">{scenario.name}</h3>
+            <p className={`text-xs leading-snug truncate ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+              {scenario.userSegment}
+            </p>
+          </div>
         </button>
       );
     };
@@ -1456,26 +1458,18 @@
             </div>
           </header>
 
-          <div className="px-8 py-6 space-y-6">
-            {[{ key: 'hall', title: UI.hallDeck, cols: 'md:grid-cols-3' }, { key: 'gaming', title: UI.gamingDeck, cols: 'md:grid-cols-4' }].map((deck) => (
-              <div key={deck.key}>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[#5A69E0]"><Icons.Users /></span>
-                  <span className="text-[#394551] text-sm font-medium">{deck.title}</span>
-                </div>
-                <div className={`grid grid-cols-1 ${deck.cols} gap-4`}>
-                  {SCEN.filter((scenario) => (scenario.deck || 'hall') === deck.key).map((scenario) => (
-                    <ScenarioCard
-                      key={scenario.id}
-                      scenario={scenario}
-                      isActive={activeScenarioId === scenario.id}
-                      isPlaying={isPlaying}
-                      onClick={() => startScenario(scenario.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="px-8 py-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+              {SCEN.map((scenario) => (
+                <ScenarioCard
+                  key={scenario.id}
+                  scenario={scenario}
+                  isActive={activeScenarioId === scenario.id}
+                  isPlaying={isPlaying}
+                  onClick={() => startScenario(scenario.id)}
+                />
+              ))}
+            </div>
           </div>
 
           <div className="px-8 pb-8" style={{ height: '720px' }}>
